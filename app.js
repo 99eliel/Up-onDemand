@@ -43,13 +43,23 @@ const provider = new GoogleAuthProvider();
 
 // Variáveis Globais
 let currentUser = null;
-let selectedFile = null;
+let selectedLogoFile = null;
+let selectedKmlFile = null;
 
-// Elementos da Interface
+// ==========================================
+// ELEMENTOS DA INTERFACE
+// ==========================================
 const loginScreen = document.getElementById('login-screen');
 const profileScreen = document.getElementById('profile-screen');
+const requestScreen = document.getElementById('request-screen');
+
+// Botões de Navegação
 const btnGoogleLogin = document.getElementById('btn-google-login');
 const btnLogout = document.getElementById('btn-logout');
+const btnNextStep = document.getElementById('btn-next-step');
+const btnBackProfile = document.getElementById('btn-back-profile');
+
+// Elementos - Perfil
 const userName = document.getElementById('user-name');
 const userEmail = document.getElementById('user-email');
 const userPhoto = document.getElementById('user-photo');
@@ -59,14 +69,26 @@ const logoUploadInput = document.getElementById('logo-upload');
 const logoPreviewContainer = document.getElementById('logo-preview-container');
 const logoPreview = document.getElementById('logo-preview');
 const btnSaveProfile = document.getElementById('btn-save-profile');
-const btnNextStep = document.getElementById('btn-next-step');
 
-// Função para gerenciar a troca de telas
+// Elementos - Formulário Tela 2
+const kmlUploadInput = document.getElementById('kml-upload');
+const kmlFilenameDisplay = document.getElementById('kml-filename');
+const compassSlider = document.getElementById('compass-slider');
+const compassArrow = document.getElementById('compass-arrow');
+const compassValue = document.getElementById('compass-value');
+const serviceForm = document.getElementById('service-form');
+
+// ==========================================
+// FUNÇÕES PRINCIPAIS
+// ==========================================
+
+// Gerencia a troca de telas
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(screen => {
         screen.classList.remove('active');
     });
     document.getElementById(screenId).classList.add('active');
+    window.scrollTo(0, 0); // Sobe pro topo ao trocar de tela
 }
 
 // Carrega os dados do Firestore
@@ -103,7 +125,10 @@ async function loadUserProfile(user) {
     }
 }
 
-// Monitor de Sessão
+// ==========================================
+// EVENTOS DE AUTENTICAÇÃO E PERFIL
+// ==========================================
+
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
@@ -121,7 +146,6 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// Ações de Botões
 btnGoogleLogin.addEventListener('click', () => {
     signInWithPopup(auth, provider).catch(error => console.error("Erro no login:", error));
 });
@@ -130,7 +154,7 @@ btnLogout.addEventListener('click', () => {
     signOut(auth).then(() => {
         logoPreviewContainer.classList.add('hidden');
         logoPreview.src = "";
-        selectedFile = null;
+        selectedLogoFile = null;
     });
 });
 
@@ -141,14 +165,14 @@ toggleWhiteLabel.addEventListener('change', (e) => {
         logoUploadArea.classList.add('hidden');
         logoPreviewContainer.classList.add('hidden');
         logoPreview.src = "";
-        selectedFile = null;
+        selectedLogoFile = null;
     }
 });
 
 logoUploadInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
-        selectedFile = file;
+        selectedLogoFile = file;
         const reader = new FileReader();
         reader.onload = function(event) {
             logoPreview.src = event.target.result;
@@ -167,9 +191,9 @@ btnSaveProfile.addEventListener('click', async () => {
         const userDocRef = doc(db, "users", currentUser.uid);
         let logoUrl = logoPreview.src.startsWith('http') ? logoPreview.src : "";
 
-        if (toggleWhiteLabel.checked && selectedFile) {
-            const storageRef = ref(storage, `logos/${currentUser.uid}_${selectedFile.name}`);
-            const snapshot = await uploadBytes(storageRef, selectedFile);
+        if (toggleWhiteLabel.checked && selectedLogoFile) {
+            const storageRef = ref(storage, `logos/${currentUser.uid}_${selectedLogoFile.name}`);
+            const snapshot = await uploadBytes(storageRef, selectedLogoFile);
             logoUrl = await getDownloadURL(snapshot.ref);
         }
 
@@ -181,7 +205,7 @@ btnSaveProfile.addEventListener('click', async () => {
         }, { merge: true });
 
         alert("Configurações salvas!");
-        selectedFile = null;
+        selectedLogoFile = null;
     } catch (error) {
         console.error("Erro ao salvar:", error);
         alert("Erro ao salvar.");
@@ -191,8 +215,65 @@ btnSaveProfile.addEventListener('click', async () => {
     }
 });
 
+// ==========================================
+// EVENTOS DA TELA 2 (FORMULÁRIO DE SERVIÇO)
+// ==========================================
+
+// Navegação para a Tela 2
 btnNextStep.addEventListener('click', () => {
-    alert("Próxima etapa em desenvolvimento.");
+    showScreen('request-screen');
+});
+
+// Voltar para a Tela 1.5
+btnBackProfile.addEventListener('click', () => {
+    showScreen('profile-screen');
+});
+
+// Captura e exibe o nome do arquivo KML selecionado
+kmlUploadInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        selectedKmlFile = file;
+        kmlFilenameDisplay.textContent = `✔ Arquivo: ${file.name}`;
+        kmlFilenameDisplay.style.color = 'var(--primary-dark)';
+    } else {
+        selectedKmlFile = null;
+        kmlFilenameDisplay.textContent = "Anexar Arquivo .KML ou .SHP (Zip) *";
+        kmlFilenameDisplay.style.color = 'var(--text-muted)';
+    }
+});
+
+// Lógica Visual da Bússola
+compassSlider.addEventListener('input', (e) => {
+    const degree = e.target.value;
+    compassArrow.style.transform = `rotate(${degree}deg)`;
+    compassValue.textContent = `${degree}°`;
+});
+
+// Envio do Formulário (Preparação para Tela 3)
+serviceForm.addEventListener('submit', (e) => {
+    e.preventDefault(); // Impede recarregamento da página
+
+    if (!selectedKmlFile) {
+        alert("Por favor, anexe o arquivo .KML ou .SHP da área.");
+        return;
+    }
+
+    // Coletando os dados inseridos
+    const formData = {
+        farmName: document.getElementById('farm-name').value,
+        fieldName: document.getElementById('field-name').value,
+        operationType: document.getElementById('operation-type').value,
+        implementWidth: document.getElementById('implement-width').value,
+        gpsModel: document.getElementById('gps-model').value,
+        compassDegree: document.getElementById('compass-slider').value,
+        observations: document.getElementById('observations').value,
+        file: selectedKmlFile
+    };
+
+    console.log("Dados Prontos para Checkout:", formData);
+    alert("Formulário validado! O próximo passo será a Tela 3: Termo de Aceite e Pagamento.");
+    // Aqui chamaremos futuramente a função para abrir a Tela 3.
 });
 
 // ==========================================
@@ -200,14 +281,9 @@ btnNextStep.addEventListener('click', () => {
 // ==========================================
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then((registration) => {
-        console.log('SW registrado com escopo:', registration.scope);
-        
-        // Sempre que carregar a página, checa se tem um SW novo no servidor
         registration.update();
     });
 
-    // Se um novo Service Worker assumir o controle (porque o sw.js no GitHub mudou),
-    // a página é recarregada automaticamente para pegar o código HTML/JS/CSS novo.
     let refreshing;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (refreshing) return;
