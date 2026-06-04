@@ -15,14 +15,12 @@
 </head>
 <body>
 
-    <!-- TELA 1: LOGIN (CPF + DATA DE NASCIMENTO) -->
     <div id="login-screen" class="screen active">
         <div class="logo-container">
             <img src="icon.svg" alt="Satélite UpAgri" style="width: 80px; margin-bottom: 10px;">
             <h1>UpAgri</h1>
             <p>Linhas de Piloto Automático On-Demand</p>
         </div>
-        
         <div class="card" style="width: 100%; max-width: 400px; margin: 0 auto;">
             <h3 class="section-title text-center">Acesso ao Sistema</h3>
             <form id="login-form">
@@ -39,16 +37,14 @@
         </div>
     </div>
 
-    <!-- TELA 1.2: CADASTRO COMPLEMENTAR -->
     <div id="register-screen" class="screen">
         <div class="logo-container" style="margin-top: 20px; margin-bottom: 20px;">
             <img src="icon.svg" alt="Satélite UpAgri" style="width: 60px;">
         </div>
-        
         <div class="card" style="width: 100%; max-width: 400px; margin: 0 auto;">
             <h3 class="section-title">Completar Cadastro</h3>
             <p style="margin-bottom: 20px; font-size: 0.9rem; color: var(--text-muted);">
-                Parece que é seu primeiro acesso. Precisamos de mais alguns dados para gerar seus relatórios.
+                Parece que é seu primeiro acesso. Precisamos de mais alguns dados.
             </p>
             <form id="register-form">
                 <div class="form-group">
@@ -64,7 +60,6 @@
         </div>
     </div>
 
-    <!-- TELA 1.5: PERFIL -->
     <div id="profile-screen" class="screen">
         <header class="app-header">
             <h2>Meu Perfil</h2>
@@ -100,11 +95,11 @@
             </div>
             
             <button id="btn-next-step" class="btn success full-width">Nova Solicitação de Serviço ➔</button>
-            <button id="btn-open-admin-auth" class="btn secondary full-width mt-15">⚙️ Acesso Administrativo</button>
+            
+            <button id="btn-admin-panel" class="btn secondary full-width mt-15">⚙️ Painel Administrativo</button>
         </main>
     </div>
 
-    <!-- TELA 2: SOLICITAÇÃO DE SERVIÇO -->
     <div id="request-screen" class="screen">
         <header class="app-header">
             <button id="btn-back-profile" class="btn-text">⬅ Voltar</button>
@@ -115,12 +110,12 @@
             <form id="service-form" class="card">
                 <h3 class="section-title">1. Identificação</h3>
                 <div class="form-group">
-                    <label for="farm-name">Nome da Fazenda *</label>
-                    <input type="text" id="farm-name" class="form-control" placeholder="Ex: Fazenda Boa Esperança" required>
+                    <label>Nome da Fazenda *</label>
+                    <input type="text" id="farm-name" class="form-control" required>
                 </div>
                 <div class="form-group">
-                    <label for="field-name">Nome do Talhão *</label>
-                    <input type="text" id="field-name" class="form-control" placeholder="Ex: Talhão 05" required>
+                    <label>Nome do Talhão *</label>
+                    <input type="text" id="field-name" class="form-control" required>
                 </div>
                 <hr class="divider">
                 <h3 class="section-title">2. Geometria da Área</h3>
@@ -133,7 +128,7 @@
                 <hr class="divider">
                 <h3 class="section-title">3. Dados Técnicos da Operação</h3>
                 <div class="form-group">
-                    <label for="operation-type">Objetivo da Operação *</label>
+                    <label>Objetivo da Operação *</label>
                     <select id="operation-type" class="form-control" required>
                         <option value="">Selecione...</option>
                         <option value="Plantio">Linhas de Plantio</option>
@@ -143,37 +138,36 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="implement-width">Largura Útil do Implemento (em Metros) *</label>
-                    <input type="number" id="implement-width" class="form-control" placeholder="Ex: 9.5" step="0.01" required>
+                    <label>Largura Útil do Implemento (Metros) *</label>
+                    <input type="number" id="implement-width" class="form-control" step="0.01" required>
                 </div>
                 <div class="form-group">
-                    <label for="gps-model">Marca/Modelo do Monitor GNSS *</label>
+                    <label>Marca/Modelo do Monitor GNSS *</label>
                     <select id="gps-model" class="form-control" required>
                         <option value="">Selecione...</option>
-                        <option value="John Deere">John Deere (GreenStar / Gen4)</option>
-                        <option value="Trimble">Trimble (GFX / TMX)</option>
+                        <option value="John Deere">John Deere</option>
+                        <option value="Trimble">Trimble</option>
                         <option value="Topcon">Topcon</option>
-                        <option value="Case/New Holland">Case / New Holland (Pro 700 / Intelliview)</option>
-                        <option value="Outro">Outro (Especificar nas observações)</option>
+                        <option value="Case/New Holland">Case / New Holland</option>
+                        <option value="Outro">Outro</option>
                     </select>
                 </div>
                 <div class="form-group compass-group">
-                    <label>Sentido Sugerido da Operação (Graus): <span id="compass-value">0°</span></label>
+                    <label>Sentido Sugerido (Graus): <span id="compass-value">0°</span></label>
                     <div class="compass-container">
                         <div id="compass-arrow" class="compass-arrow">⬆</div>
                     </div>
                     <input type="range" id="compass-slider" class="form-control range-slider" min="0" max="359" value="0">
                 </div>
                 <div class="form-group">
-                    <label for="observations">Observações (Opcional)</label>
-                    <textarea id="observations" class="form-control" rows="3" placeholder="Informações adicionais..."></textarea>
+                    <label>Observações</label>
+                    <textarea id="observations" class="form-control" rows="3"></textarea>
                 </div>
                 <button type="submit" class="btn success full-width">Avançar para Pagamento ➔</button>
             </form>
         </main>
     </div>
 
-    <!-- TELA 3: CHECKOUT E TERMO DE ACEITE -->
     <div id="checkout-screen" class="screen">
         <header class="app-header">
             <button id="btn-back-request" class="btn-text">⬅ Voltar</button>
@@ -190,84 +184,63 @@
             <div class="card warning-card">
                 <h3 class="section-title" style="color: #D84315;">⚠ Termo de Responsabilidade</h3>
                 <p>Compreendo que a precisão das linhas geradas depende exclusivamente da qualidade do arquivo enviado e das medidas inseridas.</p>
-                <p><strong>Erros de digitação ou envio de contornos incorretos por minha parte exigirão um novo pagamento para refazer o projeto.</strong></p>
                 <label class="checkbox-label mt-15">
                     <input type="checkbox" id="terms-checkbox" class="large-checkbox">
-                    <span>Li e concordo com os termos acima.</span>
+                    <span>Li e concordo com os termos.</span>
                 </label>
             </div>
             <div class="payment-methods">
                 <button id="btn-pay-pix" class="btn primary full-width" disabled>Gerar PIX e Concluir</button>
-                <button id="btn-pay-card" class="btn secondary full-width mt-10" disabled>Pagar com Cartão</button>
             </div>
         </main>
     </div>
 
-    <!-- TELA 4: LOGIN ADMINISTRATIVO -->
-    <div id="admin-auth-screen" class="screen">
-        <header class="app-header" style="background-color: #1B5E20;">
-            <button id="btn-back-profile-from-auth" class="btn-text">⬅ Voltar</button>
-            <h2>Acesso Restrito</h2>
-            <div style="width: 60px;"></div>
-        </header>
-        <main class="content">
-            <div class="card">
-                <h3 class="section-title text-center">Verificação Dupla</h3>
-                <p class="text-center" style="margin-bottom: 20px; color: var(--text-muted);">Insira as credenciais de administrador para acessar o painel.</p>
-                <form id="admin-auth-form">
-                    <div class="form-group">
-                        <label>Senha Nível 1 *</label>
-                        <input type="password" id="admin-pass1" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Senha Nível 2 *</label>
-                        <input type="password" id="admin-pass2" class="form-control" required>
-                    </div>
-                    <button type="submit" class="btn primary full-width mt-15" style="background-color: #1B5E20;">Validar Acesso</button>
-                </form>
-            </div>
-        </main>
-    </div>
-
-    <!-- TELA 5: PAINEL ADMINISTRATIVO -->
     <div id="admin-screen" class="screen">
         <header class="app-header" style="background-color: #1B5E20;">
-            <button id="btn-leave-admin" class="btn-text">⬅ Sair</button>
+            <button id="btn-back-admin" class="btn-text">⬅ Voltar</button>
             <h2>Painel Adm</h2>
-            <button id="btn-admin-settings" class="btn-text">⚙️</button>
+            <button id="btn-admin-settings" class="btn-text">⚙️ Senhas</button>
         </header>
         <main class="content">
-            
-            <!-- Modal de Configuração de Senhas (Oculto por padrão) -->
-            <div id="admin-settings-panel" class="card hidden" style="border: 2px solid #1B5E20;">
-                <h3 class="section-title">Alterar Senhas de Acesso</h3>
-                <form id="admin-change-pass-form">
-                    <div class="form-group">
-                        <label>Nova Senha Nível 1</label>
-                        <input type="text" id="new-admin-pass1" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Nova Senha Nível 2</label>
-                        <input type="text" id="new-admin-pass2" class="form-control" required>
-                    </div>
-                    <button type="submit" class="btn success full-width mt-10">Salvar Novas Senhas</button>
-                    <button type="button" id="btn-close-settings" class="btn secondary full-width mt-10">Cancelar</button>
-                </form>
-            </div>
-
             <h3 class="section-title">Fila de Pedidos</h3>
-            <button id="btn-refresh-orders" class="btn secondary full-width" style="margin-bottom: 20px;">🔄 Atualizar Lista</button>
-            
+            <p style="margin-bottom: 20px; color: var(--text-muted); font-size: 0.9rem;">Pedidos mais recentes aparecem no topo.</p>
             <div id="admin-orders-container">
-                <!-- Pedidos serão injetados aqui pelo JavaScript -->
-            </div>
+                </div>
         </main>
     </div>
 
-    <!-- Loading Overlay -->
+    <div id="admin-login-modal" class="modal hidden">
+        <div class="modal-content card">
+            <h3 class="section-title">Acesso Restrito</h3>
+            <p style="font-size: 0.9rem; margin-bottom: 15px; color: var(--text-muted);">Digite uma das senhas de administrador para acessar.</p>
+            <input type="password" id="admin-password-input" class="form-control" placeholder="Senha">
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button id="btn-cancel-admin-login" class="btn secondary full-width">Cancelar</button>
+                <button id="btn-confirm-admin-login" class="btn primary full-width">Entrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-settings-modal" class="modal hidden">
+        <div class="modal-content card">
+            <h3 class="section-title">Alterar Senhas do Painel</h3>
+            <div class="form-group">
+                <label>Senha 1</label>
+                <input type="text" id="admin-pass-1" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Senha 2</label>
+                <input type="text" id="admin-pass-2" class="form-control">
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button id="btn-cancel-admin-settings" class="btn secondary full-width">Cancelar</button>
+                <button id="btn-save-admin-settings" class="btn success full-width">Salvar</button>
+            </div>
+        </div>
+    </div>
+
     <div id="loading-overlay" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:999; display:flex; flex-direction:column; justify-content:center; align-items:center;">
         <h2 style="color: var(--primary-color);">Processando...</h2>
-        <p>Aguarde um momento.</p>
     </div>
 
     <script type="module" src="app.js"></script>
