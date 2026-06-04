@@ -16,22 +16,23 @@ body { background-color: var(--bg-color); color: var(--text-main); display: flex
 .screen.active { display: flex; }
 .mt-10 { margin-top: 10px; }
 .mt-15 { margin-top: 15px; }
+.text-center { text-align: center; }
 
-/* --- TELAS E CONTAINERS --- */
-#login-screen { justify-content: center; align-items: center; padding: 20px; background-color: var(--card-bg); }
-.logo-container { text-align: center; margin-bottom: 40px; }
+/* --- TELAS DE ACESSO --- */
+#login-screen, #register-screen { justify-content: center; align-items: center; padding: 20px; background-color: var(--bg-color); }
+.logo-container { text-align: center; margin-bottom: 20px; }
 .logo-container h1 { font-size: 2.5rem; color: var(--primary-color); margin-bottom: 10px; }
 .logo-container p { color: var(--text-muted); }
-.auth-buttons { width: 100%; max-width: 350px; display: flex; flex-direction: column; gap: 15px; }
-.terms-text { margin-top: 30px; font-size: 0.8rem; color: var(--text-muted); text-align: center; }
 
+/* --- GERAL E CONTAINERS --- */
 .content { padding: 20px; max-width: 600px; margin: 0 auto; width: 100%; padding-bottom: 40px; }
-.user-info { text-align: center; margin-bottom: 25px; }
-.user-info img { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 10px; border: 3px solid var(--primary-color); }
-
 .card { background-color: var(--card-bg); padding: 20px; border-radius: var(--border-radius); box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
 .card h3.section-title { color: var(--primary-dark); margin-bottom: 15px; font-size: 1.1rem; }
 .divider { border: 0; height: 1px; background: var(--border-color); margin: 20px 0; }
+
+/* --- PERFIL --- */
+.user-info { text-align: center; margin-bottom: 25px; }
+.avatar-placeholder { width: 80px; height: 80px; border-radius: 50%; background-color: var(--primary-color); color: white; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; margin: 0 auto 10px auto; border: 3px solid var(--secondary-color); }
 
 /* --- BOTÕES --- */
 .btn { padding: 16px; font-size: 1rem; font-weight: bold; border: none; border-radius: var(--border-radius); cursor: pointer; transition: background-color 0.3s; text-align: center; }
@@ -40,7 +41,6 @@ body { background-color: var(--bg-color); color: var(--text-main); display: flex
 .btn.secondary { background-color: transparent; color: var(--primary-color); border: 2px solid var(--primary-color); }
 .btn.success { background-color: var(--secondary-color); color: white; margin-top: 20px; }
 .btn:disabled { background-color: #cccccc; color: #888888; border-color: #cccccc; cursor: not-allowed; }
-
 .btn-text { background: none; border: none; color: white; font-size: 1rem; cursor: pointer; }
 .full-width { width: 100%; }
 
@@ -58,8 +58,8 @@ input:checked + .slider:before { transform: translateX(22px); }
 .slider.round { border-radius: 34px; }
 .slider.round:before { border-radius: 50%; }
 
-/* --- FORMULÁRIOS (TELA 2) --- */
-.form-group { margin-bottom: 18px; display: flex; flex-direction: column; }
+/* --- FORMULÁRIOS --- */
+.form-group { margin-bottom: 18px; display: flex; flex-direction: column; text-align: left; }
 .form-group label { font-weight: bold; color: var(--text-main); margin-bottom: 8px; font-size: 0.95rem; }
 .form-control { padding: 14px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; background-color: #FAFAFA; }
 .form-control:focus { outline: none; border-color: var(--primary-color); background-color: #FFF; }
@@ -79,7 +79,7 @@ textarea.form-control { resize: vertical; }
 .compass-arrow { font-size: 3.5rem; color: var(--primary-color); transition: transform 0.1s ease-out; line-height: 1; }
 .range-slider { width: 100%; margin-top: 10px; }
 
-/* --- CHECKOUT (TELA 3) --- */
+/* --- CHECKOUT --- */
 .warning-card { background-color: #FFF3E0; border: 1px solid #FFE0B2; }
 .warning-card p { font-size: 0.9rem; color: #E65100; margin-bottom: 10px; line-height: 1.4; }
 .summary-list { list-style: none; line-height: 1.8; color: var(--text-muted); font-size: 0.95rem; }
