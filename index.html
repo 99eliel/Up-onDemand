@@ -79,29 +79,8 @@
                 <p id="user-phone"></p>
                 <p id="user-cpf" style="font-size: 0.8rem; color: var(--text-muted);"></p>
             </div>
-            <div class="card white-label-section">
-                <h3>Perfil Consultor (White Label)</h3>
-                <p>Ative esta opção para que os relatórios em PDF sejam gerados com a sua logomarca.</p>
-                <div class="toggle-container">
-                    <label class="switch">
-                        <input type="checkbox" id="toggle-white-label">
-                        <span class="slider round"></span>
-                    </label>
-                    <span>Ativar White Label</span>
-                </div>
-                <div id="logo-upload-area" class="upload-area hidden">
-                    <label for="logo-upload" class="upload-label">
-                        <span>Selecione sua Logomarca (PNG/JPG)</span>
-                        <input type="file" id="logo-upload" accept="image/png, image/jpeg">
-                    </label>
-                    <div id="logo-preview-container" class="hidden">
-                        <img id="logo-preview" src="" alt="Pré-visualização da Logo">
-                    </div>
-                    <button id="btn-save-profile" class="btn primary full-width">Salvar Configurações</button>
-                </div>
-            </div>
             
-            <button id="btn-next-step" class="btn success full-width">Nova Solicitação de Serviço ➔</button>
+            <button id="btn-next-step" class="btn success full-width mt-15">Nova Solicitação de Serviço ➔</button>
             
             <!-- Botão Admin visível, mas protegido por senha -->
             <button id="btn-admin-panel" class="btn secondary full-width mt-15">⚙️ Painel Administrativo</button>
@@ -213,11 +192,21 @@
             <button id="btn-admin-settings" class="btn-text">⚙️ Senhas</button>
         </header>
         <main class="content">
+            
             <h3 class="section-title">Fila de Pedidos</h3>
             <p style="margin-bottom: 20px; color: var(--text-muted); font-size: 0.9rem;">Pedidos mais recentes aparecem no topo.</p>
-            <div id="admin-orders-container">
+            <div id="admin-orders-container" style="margin-bottom: 40px;">
                 <!-- Pedidos carregados dinamicamente -->
             </div>
+
+            <hr class="divider">
+
+            <h3 class="section-title">Gerenciar Consultores</h3>
+            <p style="margin-bottom: 20px; color: var(--text-muted); font-size: 0.9rem;">Ative o White Label e faça o upload da logo dos seus clientes.</p>
+            <div id="admin-users-container">
+                <!-- Usuários carregados dinamicamente -->
+            </div>
+
         </main>
     </div>
 
