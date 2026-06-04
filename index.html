@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Meta tags para forçar o navegador a não fazer cache pesado do HTML -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
+    <title>UpAgri On-Demand</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2E7D32">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- TELA DE LOGIN -->
+    <div id="login-screen" class="screen active">
+        <div class="logo-container">
+            <h1>UpAgri</h1>
+            <p>Linhas de Piloto Automático On-Demand</p>
+        </div>
+        <div class="auth-buttons">
+            <button id="btn-google-login" class="btn primary">Entrar com Google</button>
+        </div>
+        <p class="terms-text">Ao entrar, você concorda com nossos Termos de Serviço.</p>
+    </div>
+
+    <!-- TELA DE PERFIL (CONSULTOR / WHITE LABEL) -->
+    <div id="profile-screen" class="screen">
+        <header class="app-header">
+            <h2>Meu Perfil</h2>
+            <button id="btn-logout" class="btn-text">Sair</button>
+        </header>
+
+        <main class="content">
+            <div class="user-info">
+                <img id="user-photo" src="" alt="Foto do Usuário" style="display: none;">
+                <h3 id="user-name">Carregando...</h3>
+                <p id="user-email"></p>
+            </div>
+
+            <div class="card white-label-section">
+                <h3>Perfil Consultor (White Label)</h3>
+                <p>Ative esta opção para que os relatórios em PDF sejam gerados com a sua logomarca.</p>
+                
+                <div class="toggle-container">
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-white-label">
+                        <span class="slider round"></span>
+                    </label>
+                    <span>Ativar White Label</span>
+                </div>
+
+                <div id="logo-upload-area" class="upload-area hidden">
+                    <label for="logo-upload" class="upload-label">
+                        <span>Selecione sua Logomarca (PNG/JPG)</span>
+                        <input type="file" id="logo-upload" accept="image/png, image/jpeg">
+                    </label>
+                    <div id="logo-preview-container" class="hidden">
+                        <img id="logo-preview" src="" alt="Pré-visualização da Logo">
+                    </div>
+                    <button id="btn-save-profile" class="btn primary full-width">Salvar Configurações</button>
+                </div>
+            </div>
+
+            <button id="btn-next-step" class="btn success full-width">Nova Solicitação de Serviço ➔</button>
+        </main>
+    </div>
+
+    <!-- Instrução para iOS caso seja necessário (Opcional) -->
+    <div id="ios-instructions" class="hidden">
+        Para instalar no iOS: Toque em Compartilhar e "Adicionar à Tela de Início".
+    </div>
+
+    <!-- Script principal como Módulo -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
