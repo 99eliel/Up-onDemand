@@ -1,4 +1,4 @@
-// Importações da SDK Modular do Firebase (Carregadas via CDN para não depender de build/Node.js)
+// Importações da SDK Modular do Firebase via CDN
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
 import { 
@@ -21,7 +21,7 @@ import {
     getDownloadURL 
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
-// Suas credenciais oficiais do projeto UpAgro
+// Credenciais oficiais do projeto UpAgro
 const firebaseConfig = {
     apiKey: "AIzaSyCTEmqxiRR6SbzZDcqnn0wMrPvm2IFSDXw",
     authDomain: "upagro-caa98.firebaseapp.com",
@@ -33,30 +33,26 @@ const firebaseConfig = {
     measurementId: "G-GG4CLWL3QB"
 };
 
-// Inicialização dos Serviços do Firebase
+// Inicialização dos Serviços
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app); // Analytics ativado conforme sua chave
+const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 const provider = new GoogleAuthProvider();
 
-// Variável global para armazenar os dados do usuário autenticado
+// Variáveis Globais
 let currentUser = null;
 let selectedFile = null;
 
-// Elementos da Interface - Telas
+// Elementos da Interface
 const loginScreen = document.getElementById('login-screen');
 const profileScreen = document.getElementById('profile-screen');
-
-// Elementos da Interface - Autenticação
 const btnGoogleLogin = document.getElementById('btn-google-login');
 const btnLogout = document.getElementById('btn-logout');
 const userName = document.getElementById('user-name');
 const userEmail = document.getElementById('user-email');
 const userPhoto = document.getElementById('user-photo');
-
-// Elementos da Interface - Perfil (White Label)
 const toggleWhiteLabel = document.getElementById('toggle-white-label');
 const logoUploadArea = document.getElementById('logo-upload-area');
 const logoUploadInput = document.getElementById('logo-upload');
@@ -73,7 +69,7 @@ function showScreen(screenId) {
     document.getElementById(screenId).classList.add('active');
 }
 
-// Carrega os dados de perfil do usuário guardados no Firestore
+// Carrega os dados do Firestore
 async function loadUserProfile(user) {
     try {
         const docRef = doc(db, "users", user.uid);
@@ -81,13 +77,9 @@ async function loadUserProfile(user) {
 
         if (docSnap.exists()) {
             const data = docSnap.data();
-            
-            // Aplica a configuração do switch White Label
             if (data.whiteLabelActive) {
                 toggleWhiteLabel.checked = true;
                 logoUploadArea.classList.remove('hidden');
-                
-                // Se houver uma logo já salva no Storage, exibe na tela
                 if (data.logoUrl) {
                     logoPreview.src = data.logoUrl;
                     logoPreviewContainer.classList.remove('hidden');
@@ -97,7 +89,6 @@ async function loadUserProfile(user) {
                 logoUploadArea.classList.add('hidden');
             }
         } else {
-            // Caso seja o primeiro login do usuário, cria um registro inicial limpo
             await setDoc(docRef, {
                 name: user.displayName,
                 email: user.email,
@@ -108,11 +99,11 @@ async function loadUserProfile(user) {
             logoUploadArea.classList.add('hidden');
         }
     } catch (error) {
-        console.error("Erro ao carregar perfil do Firestore:", error);
+        console.error("Erro ao carregar perfil:", error);
     }
 }
 
-// Monitora o estado de autenticação do usuário (Sessão ativa ou não)
+// Monitor de Sessão
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         currentUser = user;
@@ -122,8 +113,6 @@ onAuthStateChanged(auth, async (user) => {
             userPhoto.src = user.photoURL;
             userPhoto.style.display = 'inline-block';
         }
-        
-        // Busca as configurações do Firestore antes de exibir a tela
         await loadUserProfile(user);
         showScreen('profile-screen');
     } else {
@@ -132,30 +121,19 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// Ação de Login com Google
+// Ações de Botões
 btnGoogleLogin.addEventListener('click', () => {
-    signInWithPopup(auth, provider)
-        .then((result) => {
-            console.log("Login efetuado com sucesso:", result.user.displayName);
-        }).catch((error) => {
-            console.error("Erro ao tentar autenticar:", error);
-            alert("Erro na autenticação. Verifique sua conexão.");
-        });
+    signInWithPopup(auth, provider).catch(error => console.error("Erro no login:", error));
 });
 
-// Ação de Logout
 btnLogout.addEventListener('click', () => {
     signOut(auth).then(() => {
         logoPreviewContainer.classList.add('hidden');
         logoPreview.src = "";
         selectedFile = null;
-        console.log("Sessão encerrada.");
-    }).catch((error) => {
-        console.error("Erro ao sair da conta:", error);
     });
 });
 
-// Controla a visibilidade da área de upload ao alternar o switch
 toggleWhiteLabel.addEventListener('change', (e) => {
     if (e.target.checked) {
         logoUploadArea.classList.remove('hidden');
@@ -167,7 +145,6 @@ toggleWhiteLabel.addEventListener('change', (e) => {
     }
 });
 
-// Captura o arquivo de imagem selecionado e gera o preview local temporário
 logoUploadInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -181,10 +158,8 @@ logoUploadInput.addEventListener('change', (e) => {
     }
 });
 
-// Salva as configurações de Perfil e faz o upload da logo se necessário
 btnSaveProfile.addEventListener('click', async () => {
     if (!currentUser) return;
-
     btnSaveProfile.disabled = true;
     btnSaveProfile.textContent = "Salvando...";
 
@@ -192,18 +167,12 @@ btnSaveProfile.addEventListener('click', async () => {
         const userDocRef = doc(db, "users", currentUser.uid);
         let logoUrl = logoPreview.src.startsWith('http') ? logoPreview.src : "";
 
-        // Se o White Label está ativo e há um novo arquivo local selecionado para upload
         if (toggleWhiteLabel.checked && selectedFile) {
-            // Define a referência do arquivo no Storage usando o UID do usuário para evitar duplicados
             const storageRef = ref(storage, `logos/${currentUser.uid}_${selectedFile.name}`);
-            
-            // Executa o upload dos bytes da imagem
             const snapshot = await uploadBytes(storageRef, selectedFile);
-            // Captura a URL pública gerada pelo Storage
             logoUrl = await getDownloadURL(snapshot.ref);
         }
 
-        // Atualiza as informações no banco de dados Firestore
         await setDoc(userDocRef, {
             name: currentUser.displayName,
             email: currentUser.email,
@@ -211,18 +180,38 @@ btnSaveProfile.addEventListener('click', async () => {
             logoUrl: toggleWhiteLabel.checked ? logoUrl : ""
         }, { merge: true });
 
-        alert("Configurações salvas com sucesso!");
-        selectedFile = null; // Limpa a seleção temporária após o sucesso
+        alert("Configurações salvas!");
+        selectedFile = null;
     } catch (error) {
-        console.error("Erro ao salvar configurações:", error);
-        alert("Ocorreu um erro ao salvar. Tente novamente.");
+        console.error("Erro ao salvar:", error);
+        alert("Erro ao salvar.");
     } finally {
         btnSaveProfile.disabled = false;
         btnSaveProfile.textContent = "Salvar Configurações";
     }
 });
 
-// Avança para a próxima etapa do fluxo
 btnNextStep.addEventListener('click', () => {
-    alert("Próxima etapa: Tela 2 - Solicitação do Serviço.");
+    alert("Próxima etapa em desenvolvimento.");
 });
+
+// ==========================================
+// LÓGICA DO SERVICE WORKER E AUTO-UPDATE
+// ==========================================
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then((registration) => {
+        console.log('SW registrado com escopo:', registration.scope);
+        
+        // Sempre que carregar a página, checa se tem um SW novo no servidor
+        registration.update();
+    });
+
+    // Se um novo Service Worker assumir o controle (porque o sw.js no GitHub mudou),
+    // a página é recarregada automaticamente para pegar o código HTML/JS/CSS novo.
+    let refreshing;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+    });
+}
