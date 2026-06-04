@@ -98,7 +98,9 @@
                     <button id="btn-save-profile" class="btn primary full-width">Salvar Configurações</button>
                 </div>
             </div>
+            
             <button id="btn-next-step" class="btn success full-width">Nova Solicitação de Serviço ➔</button>
+            <button id="btn-open-admin-auth" class="btn secondary full-width mt-15">⚙️ Acesso Administrativo</button>
         </main>
     </div>
 
@@ -198,12 +200,74 @@
                 <button id="btn-pay-pix" class="btn primary full-width" disabled>Gerar PIX e Concluir</button>
                 <button id="btn-pay-card" class="btn secondary full-width mt-10" disabled>Pagar com Cartão</button>
             </div>
-            <!-- Loading Overlay -->
-            <div id="loading-overlay" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:999; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-                <h2 style="color: var(--primary-color);">Processando...</h2>
-                <p>Aguarde um momento.</p>
+        </main>
+    </div>
+
+    <!-- TELA 4: LOGIN ADMINISTRATIVO -->
+    <div id="admin-auth-screen" class="screen">
+        <header class="app-header" style="background-color: #1B5E20;">
+            <button id="btn-back-profile-from-auth" class="btn-text">⬅ Voltar</button>
+            <h2>Acesso Restrito</h2>
+            <div style="width: 60px;"></div>
+        </header>
+        <main class="content">
+            <div class="card">
+                <h3 class="section-title text-center">Verificação Dupla</h3>
+                <p class="text-center" style="margin-bottom: 20px; color: var(--text-muted);">Insira as credenciais de administrador para acessar o painel.</p>
+                <form id="admin-auth-form">
+                    <div class="form-group">
+                        <label>Senha Nível 1 *</label>
+                        <input type="password" id="admin-pass1" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Senha Nível 2 *</label>
+                        <input type="password" id="admin-pass2" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn primary full-width mt-15" style="background-color: #1B5E20;">Validar Acesso</button>
+                </form>
             </div>
         </main>
+    </div>
+
+    <!-- TELA 5: PAINEL ADMINISTRATIVO -->
+    <div id="admin-screen" class="screen">
+        <header class="app-header" style="background-color: #1B5E20;">
+            <button id="btn-leave-admin" class="btn-text">⬅ Sair</button>
+            <h2>Painel Adm</h2>
+            <button id="btn-admin-settings" class="btn-text">⚙️</button>
+        </header>
+        <main class="content">
+            
+            <!-- Modal de Configuração de Senhas (Oculto por padrão) -->
+            <div id="admin-settings-panel" class="card hidden" style="border: 2px solid #1B5E20;">
+                <h3 class="section-title">Alterar Senhas de Acesso</h3>
+                <form id="admin-change-pass-form">
+                    <div class="form-group">
+                        <label>Nova Senha Nível 1</label>
+                        <input type="text" id="new-admin-pass1" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Nova Senha Nível 2</label>
+                        <input type="text" id="new-admin-pass2" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn success full-width mt-10">Salvar Novas Senhas</button>
+                    <button type="button" id="btn-close-settings" class="btn secondary full-width mt-10">Cancelar</button>
+                </form>
+            </div>
+
+            <h3 class="section-title">Fila de Pedidos</h3>
+            <button id="btn-refresh-orders" class="btn secondary full-width" style="margin-bottom: 20px;">🔄 Atualizar Lista</button>
+            
+            <div id="admin-orders-container">
+                <!-- Pedidos serão injetados aqui pelo JavaScript -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:999; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <h2 style="color: var(--primary-color);">Processando...</h2>
+        <p>Aguarde um momento.</p>
     </div>
 
     <script type="module" src="app.js"></script>
