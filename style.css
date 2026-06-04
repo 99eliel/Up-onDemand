@@ -79,11 +79,19 @@ textarea.form-control { resize: vertical; }
 .compass-arrow { font-size: 3.5rem; color: var(--primary-color); transition: transform 0.1s ease-out; line-height: 1; }
 .range-slider { width: 100%; margin-top: 10px; }
 
-/* --- CHECKOUT --- */
+/* --- CHECKOUT E ADMIN CARDS --- */
 .warning-card { background-color: #FFF3E0; border: 1px solid #FFE0B2; }
 .warning-card p { font-size: 0.9rem; color: #E65100; margin-bottom: 10px; line-height: 1.4; }
 .summary-list { list-style: none; line-height: 1.8; color: var(--text-muted); font-size: 0.95rem; }
 .summary-list strong { color: var(--text-main); }
 .checkbox-label { display: flex; align-items: center; gap: 12px; cursor: pointer; font-weight: bold; color: #D84315; font-size: 0.95rem; }
 .large-checkbox { width: 24px; height: 24px; cursor: pointer; }
-.payment-methods { display: flex; flex-direction: column; }
+
+/* ESTILOS DO PAINEL ADM */
+.order-card { border-left: 5px solid var(--primary-color); position: relative; }
+.order-header { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+.order-date { font-size: 0.8rem; color: #888; }
+.order-status { font-size: 0.8rem; font-weight: bold; background: #FFF9C4; color: #F57F17; padding: 4px 8px; border-radius: 4px; }
+.order-details p { font-size: 0.9rem; margin-bottom: 5px; color: var(--text-main); }
+.btn-whatsapp { background-color: #25D366; color: white; padding: 12px; border-radius: 8px; font-weight: bold; display: flex; justify-content: center; align-items: center; text-decoration: none; margin-top: 15px; }
+.btn-download { background-color: var(--primary-color); color: white; padding: 12px; border-radius: 8px; font-weight: bold; display: flex; justify-content: center; align-items: center; text-decoration: none; margin-top: 10px; }
