@@ -7,21 +7,24 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>UpAgri On-Demand</title>
+    
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/svg+xml" href="icon.svg">
-    <link rel="apple-touch-icon" href="icon.svg">
+    <link rel="icon" type="image/png" href="icon-192x192.png">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+    
     <meta name="theme-color" content="#2E7D32">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- TELA 1: LOGIN -->
+    <!-- TELA 1: LOGIN (CPF + DATA DE NASCIMENTO) -->
     <div id="login-screen" class="screen active">
         <div class="logo-container">
-            <img src="icon.svg" alt="Satélite UpAgri" style="width: 80px; margin-bottom: 10px;">
+            <img src="icon-192x192.png" alt="Logo UpAgri" style="width: 80px; margin-bottom: 10px; border-radius: 12px;">
             <h1>UpAgri</h1>
             <p>Linhas de Piloto Automático On-Demand</p>
         </div>
+        
         <div class="card" style="width: 100%; max-width: 400px; margin: 0 auto;">
             <h3 class="section-title text-center">Acesso ao Sistema</h3>
             <form id="login-form">
@@ -38,15 +41,16 @@
         </div>
     </div>
 
-    <!-- TELA 1.2: CADASTRO -->
+    <!-- TELA 1.2: CADASTRO COMPLEMENTAR -->
     <div id="register-screen" class="screen">
         <div class="logo-container" style="margin-top: 20px; margin-bottom: 20px;">
-            <img src="icon.svg" alt="Satélite UpAgri" style="width: 60px;">
+            <img src="icon-192x192.png" alt="Logo UpAgri" style="width: 60px; border-radius: 12px;">
         </div>
+        
         <div class="card" style="width: 100%; max-width: 400px; margin: 0 auto;">
             <h3 class="section-title">Completar Cadastro</h3>
             <p style="margin-bottom: 20px; font-size: 0.9rem; color: var(--text-muted);">
-                Parece que é seu primeiro acesso. Precisamos de mais alguns dados.
+                Parece que é seu primeiro acesso. Precisamos de mais alguns dados para gerar seus relatórios.
             </p>
             <form id="register-form">
                 <div class="form-group">
@@ -75,15 +79,36 @@
                 <p id="user-phone"></p>
                 <p id="user-cpf" style="font-size: 0.8rem; color: var(--text-muted);"></p>
             </div>
+            <div class="card white-label-section">
+                <h3>Perfil Consultor (White Label)</h3>
+                <p>Ative esta opção para que os relatórios em PDF sejam gerados com a sua logomarca.</p>
+                <div class="toggle-container">
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-white-label">
+                        <span class="slider round"></span>
+                    </label>
+                    <span>Ativar White Label</span>
+                </div>
+                <div id="logo-upload-area" class="upload-area hidden">
+                    <label for="logo-upload" class="upload-label">
+                        <span>Selecione sua Logomarca (PNG/JPG)</span>
+                        <input type="file" id="logo-upload" accept="image/png, image/jpeg">
+                    </label>
+                    <div id="logo-preview-container" class="hidden">
+                        <img id="logo-preview" src="" alt="Pré-visualização da Logo">
+                    </div>
+                    <button id="btn-save-profile" class="btn primary full-width">Salvar Configurações</button>
+                </div>
+            </div>
             
-            <button id="btn-next-step" class="btn success full-width mt-15">Nova Solicitação de Serviço ➔</button>
+            <button id="btn-next-step" class="btn success full-width">Nova Solicitação de Serviço ➔</button>
             
-            <!-- Botão Admin -->
+            <!-- Botão Admin visível, mas protegido por senha -->
             <button id="btn-admin-panel" class="btn secondary full-width mt-15">⚙️ Painel Administrativo</button>
         </main>
     </div>
 
-    <!-- TELA 2: SOLICITAÇÃO -->
+    <!-- TELA 2: SOLICITAÇÃO DE SERVIÇO -->
     <div id="request-screen" class="screen">
         <header class="app-header">
             <button id="btn-back-profile" class="btn-text">⬅ Voltar</button>
@@ -147,7 +172,7 @@
                     <label>Observações</label>
                     <textarea id="observations" class="form-control" rows="3"></textarea>
                 </div>
-                <button type="submit" class="btn success full-width">Avançar para Checkout ➔</button>
+                <button type="submit" class="btn success full-width">Avançar para Pagamento ➔</button>
             </form>
         </main>
     </div>
@@ -166,14 +191,6 @@
                 <hr class="divider">
                 <h2 style="color: var(--primary-dark); text-align: center;">Total: R$ 49,90</h2>
             </div>
-            
-            <div class="card" style="background-color: #E8F5E9; border: 1px solid #C8E6C9;">
-                <h3 class="section-title text-center" style="color: var(--primary-dark);">Realizar Pagamento</h3>
-                <p class="text-center" style="font-size: 0.9rem; margin-bottom: 10px;">Chave PIX da Plataforma:</p>
-                <div class="pix-key-box" id="checkout-pix-key">Carregando chave...</div>
-                <p class="text-center" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">Ao clicar no botão abaixo, o pedido será enviado e a chave será copiada.</p>
-            </div>
-
             <div class="card warning-card">
                 <h3 class="section-title" style="color: #D84315;">⚠ Termo de Responsabilidade</h3>
                 <p>Compreendo que a precisão das linhas geradas depende exclusivamente da qualidade do arquivo enviado e das medidas inseridas.</p>
@@ -182,8 +199,9 @@
                     <span>Li e concordo com os termos.</span>
                 </label>
             </div>
-
-            <button id="btn-pay-pix" class="btn primary full-width" disabled>Copiar PIX e Enviar Pedido</button>
+            <div class="payment-methods">
+                <button id="btn-pay-pix" class="btn primary full-width" disabled>Gerar PIX e Concluir</button>
+            </div>
         </main>
     </div>
 
@@ -192,7 +210,7 @@
         <header class="app-header" style="background-color: #1B5E20;">
             <button id="btn-back-admin" class="btn-text">⬅ Voltar</button>
             <h2>Painel Adm</h2>
-            <button id="btn-admin-settings" class="btn-text">⚙️ Configurações</button>
+            <button id="btn-admin-settings" class="btn-text">⚙️ Senhas</button>
         </header>
         <main class="content">
             <h3 class="section-title">Fila de Pedidos</h3>
@@ -207,7 +225,7 @@
     <div id="admin-login-modal" class="modal hidden">
         <div class="modal-content card">
             <h3 class="section-title">Acesso Restrito</h3>
-            <p style="font-size: 0.9rem; margin-bottom: 15px; color: var(--text-muted);">Digite a senha do administrador.</p>
+            <p style="font-size: 0.9rem; margin-bottom: 15px; color: var(--text-muted);">Digite uma das senhas de administrador para acessar.</p>
             <input type="password" id="admin-password-input" class="form-control" placeholder="Senha">
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button id="btn-cancel-admin-login" class="btn secondary full-width">Cancelar</button>
@@ -216,18 +234,10 @@
         </div>
     </div>
 
-    <!-- MODAL: MUDAR CONFIGURAÇÕES ADMIN (Senhas e PIX) -->
+    <!-- MODAL: MUDAR SENHAS ADMIN -->
     <div id="admin-settings-modal" class="modal hidden">
-        <div class="modal-content card" style="max-height: 90vh; overflow-y: auto;">
-            <h3 class="section-title">Configurações do App</h3>
-            
-            <h4 style="margin-top: 15px; margin-bottom: 10px; color: var(--text-muted);">Pagamento</h4>
-            <div class="form-group">
-                <label>Chave PIX para Recebimento</label>
-                <input type="text" id="admin-pix-input" class="form-control" placeholder="E-mail, CPF, Telefone ou Aleatória">
-            </div>
-
-            <h4 style="margin-top: 20px; margin-bottom: 10px; color: var(--text-muted);">Acesso ao Painel</h4>
+        <div class="modal-content card">
+            <h3 class="section-title">Alterar Senhas do Painel</h3>
             <div class="form-group">
                 <label>Senha 1</label>
                 <input type="text" id="admin-pass-1" class="form-control">
@@ -245,7 +255,7 @@
 
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:999; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-        <h2 style="color: var(--primary-color);" id="loading-text">Processando...</h2>
+        <h2 style="color: var(--primary-color);">Processando...</h2>
     </div>
 
     <script type="module" src="app.js"></script>
