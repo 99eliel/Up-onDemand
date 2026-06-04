@@ -44,10 +44,14 @@ body { background-color: var(--bg-color); color: var(--text-main); display: flex
 .btn-text { background: none; border: none; color: white; font-size: 1rem; cursor: pointer; }
 .full-width { width: 100%; }
 
+/* --- BOTÃO WHATSAPP --- */
+.btn-whatsapp { background-color: #25D366; color: white; padding: 12px; border-radius: 8px; font-weight: bold; display: flex; justify-content: center; align-items: center; text-decoration: none; transition: background-color 0.3s; margin-top: 10px; }
+.btn-whatsapp:active { background-color: #128C7E; }
+
 /* --- HEADER --- */
 .app-header { background-color: var(--primary-color); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 10; }
 
-/* --- TOGGLE SWITCH --- */
+/* --- SWITCH --- */
 .toggle-container { display: flex; align-items: center; gap: 15px; font-weight: bold; margin-bottom: 15px; }
 .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
 .switch input { opacity: 0; width: 0; height: 0; }
@@ -65,7 +69,7 @@ input:checked + .slider:before { transform: translateX(22px); }
 .form-control:focus { outline: none; border-color: var(--primary-color); background-color: #FFF; }
 textarea.form-control { resize: vertical; }
 
-/* --- UPLOAD AREA --- */
+/* --- UPLOAD E COMPASS --- */
 .hidden { display: none !important; }
 .upload-label { display: block; padding: 20px; border: 2px dashed #ccc; border-radius: var(--border-radius); text-align: center; cursor: pointer; color: var(--text-muted); margin-bottom: 15px; background-color: #FAFAFA; }
 .upload-label input { display: none; }
@@ -73,13 +77,12 @@ textarea.form-control { resize: vertical; }
 #logo-preview-container { text-align: center; margin-bottom: 15px; }
 #logo-preview { max-width: 100%; max-height: 150px; border-radius: 8px; }
 
-/* --- BÚSSOLA --- */
 .compass-group { background-color: #F9FBE7; padding: 15px; border-radius: 8px; border: 1px solid #E6EE9C; }
 .compass-container { text-align: center; margin: 15px 0; height: 60px; display: flex; justify-content: center; align-items: center; }
 .compass-arrow { font-size: 3.5rem; color: var(--primary-color); transition: transform 0.1s ease-out; line-height: 1; }
 .range-slider { width: 100%; margin-top: 10px; }
 
-/* --- CHECKOUT E ADMIN CARDS --- */
+/* --- CHECKOUT --- */
 .warning-card { background-color: #FFF3E0; border: 1px solid #FFE0B2; }
 .warning-card p { font-size: 0.9rem; color: #E65100; margin-bottom: 10px; line-height: 1.4; }
 .summary-list { list-style: none; line-height: 1.8; color: var(--text-muted); font-size: 0.95rem; }
@@ -87,11 +90,11 @@ textarea.form-control { resize: vertical; }
 .checkbox-label { display: flex; align-items: center; gap: 12px; cursor: pointer; font-weight: bold; color: #D84315; font-size: 0.95rem; }
 .large-checkbox { width: 24px; height: 24px; cursor: pointer; }
 
-/* ESTILOS DO PAINEL ADM */
-.order-card { border-left: 5px solid var(--primary-color); position: relative; }
-.order-header { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-.order-date { font-size: 0.8rem; color: #888; }
-.order-status { font-size: 0.8rem; font-weight: bold; background: #FFF9C4; color: #F57F17; padding: 4px 8px; border-radius: 4px; }
-.order-details p { font-size: 0.9rem; margin-bottom: 5px; color: var(--text-main); }
-.btn-whatsapp { background-color: #25D366; color: white; padding: 12px; border-radius: 8px; font-weight: bold; display: flex; justify-content: center; align-items: center; text-decoration: none; margin-top: 15px; }
-.btn-download { background-color: var(--primary-color); color: white; padding: 12px; border-radius: 8px; font-weight: bold; display: flex; justify-content: center; align-items: center; text-decoration: none; margin-top: 10px; }
+/* --- MODAIS --- */
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.modal-content { width: 90%; max-width: 400px; margin: 0; }
+
+/* --- CARDS DO ADMIN --- */
+.order-card { border-left: 5px solid var(--primary-color); }
+.order-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.85rem; color: var(--text-muted); }
+.order-details p { margin-bottom: 5px; font-size: 0.95rem; }
