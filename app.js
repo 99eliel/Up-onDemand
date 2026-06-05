@@ -43,6 +43,10 @@ let selectedKmlFile = null;
 let currentOrderData = {};
 let tempLoginData = {};
 let deferredPrompt;
+let referenceMap = null;
+let referenceMarkers = [];
+let referencePolygon = null;
+let selectedMapPoints = [];
 
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
@@ -460,6 +464,7 @@ async function loadUserOrders() {
                     <p><strong>Talhão:</strong> ${escapeHtml(order.fieldName)}</p>
                     <p><strong>Operação:</strong> ${escapeHtml(order.operationType)} (${escapeHtml(order.implementWidth)}m)</p>
                     <p><strong>Monitor:</strong> ${escapeHtml(order.gpsModel)}</p>
+                    ${buildMapPointsHtml(order.mapPoints)}
                     <p><strong>Valor:</strong> ${formatMoney(order.price)}</p>
                     ${paymentHtml}
                 </div>
@@ -512,6 +517,197 @@ document.getElementById('user-orders-container').addEventListener('click', async
     }
 });
 
+
+// ==========================================
+// MAPA DE REFERÊNCIA DO PEDIDO
+// ==========================================
+
+function updateMapPointsStatus() {
+    const statusEl = document.getElementById('map-points-status');
+
+    if (!statusEl) {
+        return;
+    }
+
+    statusEl.textContent = `${selectedMapPoints.length} de 4 pontos marcados`;
+
+    if (selectedMapPoints.length === 4) {
+        statusEl.textContent += " ✔";
+        statusEl.style.color = "green";
+    } else {
+        statusEl.style.color = "var(--primary-dark)";
+    }
+}
+
+function drawReferencePolygon() {
+    if (!referenceMap) {
+        return;
+    }
+
+    if (referencePolygon) {
+        referenceMap.removeLayer(referencePolygon);
+        referencePolygon = null;
+    }
+
+    if (selectedMapPoints.length >= 3) {
+        referencePolygon = L.polygon(
+            selectedMapPoints.map(point => [point.lat, point.lng]),
+            {
+                color: '#2E7D32',
+                weight: 2,
+                fillOpacity: 0.15
+            }
+        ).addTo(referenceMap);
+    }
+}
+
+function clearMapPoints() {
+    if (!referenceMap) {
+        return;
+    }
+
+    referenceMarkers.forEach(marker => {
+        referenceMap.removeLayer(marker);
+    });
+
+    referenceMarkers = [];
+    selectedMapPoints = [];
+
+    if (referencePolygon) {
+        referenceMap.removeLayer(referencePolygon);
+        referencePolygon = null;
+    }
+
+    updateMapPointsStatus();
+}
+
+function addReferencePoint(lat, lng) {
+    if (!referenceMap) {
+        return;
+    }
+
+    if (selectedMapPoints.length >= 4) {
+        alert("Você já marcou os 4 pontos. Para alterar, clique em Limpar Pontos do Mapa.");
+        return;
+    }
+
+    const pointNumber = selectedMapPoints.length + 1;
+    const point = {
+        lat: Number(lat.toFixed(6)),
+        lng: Number(lng.toFixed(6))
+    };
+
+    selectedMapPoints.push(point);
+
+    const marker = L.marker([point.lat, point.lng])
+        .addTo(referenceMap)
+        .bindPopup(`Ponto ${pointNumber}<br>${point.lat}, ${point.lng}`)
+        .openPopup();
+
+    referenceMarkers.push(marker);
+
+    drawReferencePolygon();
+    updateMapPointsStatus();
+}
+
+function initReferenceMap() {
+    const mapEl = document.getElementById('reference-map');
+
+    if (!mapEl || typeof L === "undefined") {
+        return;
+    }
+
+    if (referenceMap) {
+        setTimeout(() => {
+            referenceMap.invalidateSize();
+        }, 300);
+        return;
+    }
+
+    referenceMap = L.map('reference-map').setView([-15.7801, -47.9292], 4);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 20,
+        attribution: '&copy; OpenStreetMap'
+    }).addTo(referenceMap);
+
+    referenceMap.on('click', (e) => {
+        addReferencePoint(e.latlng.lat, e.latlng.lng);
+    });
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                referenceMap.setView([lat, lng], 14);
+            },
+            () => {
+                // Mantém o mapa no Brasil caso o usuário não autorize localização.
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 8000,
+                maximumAge: 60000
+            }
+        );
+    }
+
+    setTimeout(() => {
+        referenceMap.invalidateSize();
+    }, 300);
+
+    updateMapPointsStatus();
+}
+
+function getGoogleMapsReferenceLink(points) {
+    if (!points || points.length === 0) {
+        return "";
+    }
+
+    const firstPoint = points[0];
+
+    return `https://www.google.com/maps/search/?api=1&query=${firstPoint.lat},${firstPoint.lng}`;
+}
+
+function getGoogleMapsRouteLink(points) {
+    if (!points || points.length === 0) {
+        return "";
+    }
+
+    const path = points
+        .map(point => `${point.lat},${point.lng}`)
+        .join('/');
+
+    return `https://www.google.com/maps/dir/${path}`;
+}
+
+function buildMapPointsHtml(points) {
+    if (!points || !Array.isArray(points) || points.length === 0) {
+        return `<p><strong>Pontos no mapa:</strong> Não informados</p>`;
+    }
+
+    const pointsList = points.map((point, index) => {
+        return `<li>Ponto ${index + 1}: ${point.lat}, ${point.lng}</li>`;
+    }).join("");
+
+    const searchLink = getGoogleMapsReferenceLink(points);
+    const routeLink = getGoogleMapsRouteLink(points);
+
+    return `
+        <div style="margin-top: 10px;">
+            <p><strong>Pontos de referência no mapa:</strong></p>
+            <ol style="margin-left: 20px;">
+                ${pointsList}
+            </ol>
+            <a href="${searchLink}" target="_blank" class="btn-secondary">Abrir Ponto 1 no Google Maps</a>
+            <a href="${routeLink}" target="_blank" class="btn-secondary">Ver Rota dos Pontos</a>
+        </div>
+    `;
+}
+
+
 // ==========================================
 // SOLICITAÇÃO E CHECKOUT
 // ==========================================
@@ -522,7 +718,9 @@ document.getElementById('btn-next-step').addEventListener('click', () => {
     document.getElementById('gps-other-model').required = false;
     selectedKmlFile = null;
     document.getElementById('kml-filename').textContent = "Anexar Arquivo .KML ou .SHP (Zip) *";
+    clearMapPoints();
     showScreen('request-screen');
+    initReferenceMap();
 });
 
 document.getElementById('btn-back-profile').addEventListener('click', () => {
@@ -532,7 +730,12 @@ document.getElementById('btn-back-profile').addEventListener('click', () => {
 
 document.getElementById('btn-back-request').addEventListener('click', () => {
     showScreen('request-screen');
+    initReferenceMap();
 });
+document.getElementById('btn-clear-map-points').addEventListener('click', () => {
+    clearMapPoints();
+});
+
 
 document.getElementById('kml-upload').addEventListener('change', (e) => {
     selectedKmlFile = e.target.files[0];
@@ -568,6 +771,10 @@ document.getElementById('service-form').addEventListener('submit', (e) => {
         return alert("Anexe o arquivo KML/SHP.");
     }
 
+    if (selectedMapPoints.length !== 4) {
+        return alert("Marque os 4 pontos de referência no mapa antes de continuar.");
+    }
+
     const gpsModelSelect = document.getElementById('gps-model').value;
     const gpsOtherModel = document.getElementById('gps-other-model').value.trim();
 
@@ -587,6 +794,7 @@ document.getElementById('service-form').addEventListener('submit', (e) => {
         gpsModel: finalGpsModel,
         compassDegree: document.getElementById('compass-slider').value,
         observations: document.getElementById('observations').value,
+        mapPoints: selectedMapPoints,
         fileName: selectedKmlFile.name
     };
 
@@ -596,6 +804,7 @@ document.getElementById('service-form').addEventListener('submit', (e) => {
         <li><strong>Operação:</strong> ${escapeHtml(currentOrderData.operationType)}</li>
         <li><strong>Largura:</strong> ${escapeHtml(currentOrderData.implementWidth)}m</li>
         <li><strong>Monitor:</strong> ${escapeHtml(currentOrderData.gpsModel)}</li>
+        <li><strong>Pontos no mapa:</strong> 4 pontos marcados</li>
     `;
 
     document.getElementById('terms-checkbox').checked = false;
@@ -636,6 +845,7 @@ document.getElementById('btn-pay-pix').addEventListener('click', async () => {
         document.getElementById('service-form').reset();
         document.getElementById('gps-other-group').classList.add('hidden');
         document.getElementById('gps-other-model').required = false;
+        clearMapPoints();
         selectedKmlFile = null;
         document.getElementById('kml-filename').textContent = "Anexar Arquivo .KML ou .SHP (Zip) *";
 
@@ -875,6 +1085,7 @@ function buildAdminOrderBaseHtml(order, orderId) {
             <p><strong>Monitor GNSS:</strong> ${escapeHtml(order.gpsModel || "Não informado")}</p>
             <p><strong>Sentido:</strong> ${escapeHtml(order.compassDegree || "0")}°</p>
             <p><strong>Observações:</strong> ${escapeHtml(order.observations || "Nenhuma")}</p>
+            ${buildMapPointsHtml(order.mapPoints)}
             <p><strong>Valor:</strong> ${formatMoney(order.price)}</p>
             <p><strong>Chave PIX:</strong> ${escapeHtml(order.pixKey || "Não informada")}</p>
             ${order.fileUrl ? `<a href="${order.fileUrl}" target="_blank" class="btn-secondary">Baixar KML/SHP</a>` : ''}
