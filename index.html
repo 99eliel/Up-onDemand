@@ -42,7 +42,7 @@
                 </div>
                 <div class="form-group">
                     <label for="login-dob">Data de Nascimento *</label>
-                    <input type="date" id="login-dob" class="form-control" required>
+                    <input type="text" id="login-dob" class="form-control" placeholder="DD/MM/AAAA" inputmode="numeric" maxlength="10" required>
                 </div>
                 <button type="submit" class="btn primary full-width mt-15">Entrar no App ➔</button>
             </form>
@@ -81,7 +81,6 @@
             <button id="btn-logout" class="btn-text">Sair</button>
         </header>
         <main class="content">
-            
             <img id="app-global-banner" class="hidden" src="" alt="Banner UP AGRO" style="width: 100%; max-height: 180px; object-fit: cover; border-radius: var(--border-radius); margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
 
             <div class="user-info">
@@ -218,19 +217,15 @@
             <button id="btn-admin-settings" class="btn-text">⚙️ Configurações</button>
         </header>
         <main class="content">
-            
             <div class="card" style="margin-bottom: 25px; border-left: 5px solid var(--secondary-color);">
                 <h3 class="section-title">Personalização</h3>
-                
                 <div class="form-group">
                     <label>Alterar Logo (Tela de Acesso)</label>
                     <input type="file" id="admin-logo-upload" class="form-control" accept="image/png, image/jpeg">
                     <img id="admin-logo-preview" class="hidden" src="" style="width: 80px; margin-top: 10px; border-radius: 8px;">
                     <button id="btn-save-global-logo" class="btn secondary full-width mt-10">Salvar Nova Logo</button>
                 </div>
-
                 <hr class="divider">
-
                 <div class="form-group">
                     <label>Alterar Banner Principal (Perfil)</label>
                     <input type="file" id="admin-banner-upload" class="form-control" accept="image/png, image/jpeg">
@@ -238,11 +233,9 @@
                     <button id="btn-save-global-banner" class="btn primary full-width mt-10">Salvar Novo Banner</button>
                 </div>
             </div>
-
             <h3 class="section-title">Fila de Pedidos</h3>
             <p style="margin-bottom: 20px; color: var(--text-muted); font-size: 0.9rem;">Pedidos mais recentes aparecem no topo.</p>
-            <div id="admin-orders-container">
-                </div>
+            <div id="admin-orders-container"></div>
         </main>
     </div>
 
