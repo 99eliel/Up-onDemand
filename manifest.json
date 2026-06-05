@@ -1,19 +1,20 @@
 {
-  "name": "UpAgri On-Demand",
-  "short_name": "UpAgri",
+  "name": "UP AGRO On-Demand",
+  "short_name": "UP AGRO",
   "description": "Linhas de Piloto Automático On-Demand",
-  "start_url": "/index.html",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#F5F5F6",
   "theme_color": "#2E7D32",
   "icons": [
     {
-      "src": "icon-192x192.png",
+      "src": "COLE_O_LINK_DO_IMGUR_AQUI.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "icon-512x512.png",
+      "src": "COLE_O_LINK_DO_IMGUR_AQUI.png",
       "sizes": "512x512",
       "type": "image/png"
     }
