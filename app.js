@@ -46,6 +46,7 @@ let deferredPrompt;
 let referenceMap = null;
 let referenceMarkers = [];
 let referencePolygon = null;
+let currentLocationMarker = null;
 let selectedMapPoints = [];
 
 function showScreen(screenId) {
@@ -400,8 +401,7 @@ async function loadUserOrders() {
     try {
         const q = query(
             collection(db, "orders"),
-            where("userCpf", "==", currentUserData.cpf),
-            orderBy("createdAt", "desc")
+            where("userCpf", "==", currentUserData.cpf)
         );
 
         const querySnapshot = await getDocs(q);
@@ -411,11 +411,25 @@ async function loadUserOrders() {
             return;
         }
 
-        container.innerHTML = "";
+        const userOrders = [];
 
         querySnapshot.forEach((docSnap) => {
-            const order = docSnap.data();
-            const orderId = docSnap.id;
+            userOrders.push({
+                id: docSnap.id,
+                ...docSnap.data()
+            });
+        });
+
+        userOrders.sort((a, b) => {
+            const dateA = a.createdAt ? a.createdAt.toMillis() : 0;
+            const dateB = b.createdAt ? b.createdAt.toMillis() : 0;
+            return dateB - dateA;
+        });
+
+        container.innerHTML = "";
+
+        userOrders.forEach((order) => {
+            const orderId = order.id;
 
             const status = order.status || "Aguardando valor";
             const dateStr = order.createdAt
@@ -473,7 +487,7 @@ async function loadUserOrders() {
 
     } catch (error) {
         console.error(error);
-        container.innerHTML = "<p>Erro ao carregar seus pedidos. Se o erro aparecer no console pedindo índice do Firestore, clique no link indicado pelo Firebase para criar o índice.</p>";
+        container.innerHTML = "<p>Erro ao carregar seus pedidos. Tente atualizar a página. Se continuar, fale com o suporte.</p>";
     }
 }
 
@@ -581,6 +595,70 @@ function clearMapPoints() {
     updateMapPointsStatus();
 }
 
+
+function centerMapOnCurrentLocation(addPointAfterCenter = false) {
+    if (!referenceMap) {
+        initReferenceMap();
+    }
+
+    if (!navigator.geolocation) {
+        alert("Seu navegador não permite acessar a localização atual.");
+        return;
+    }
+
+    showLoading("Buscando sua localização...");
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+
+            referenceMap.setView([lat, lng], 17);
+
+            if (currentLocationMarker) {
+                referenceMap.removeLayer(currentLocationMarker);
+            }
+
+            currentLocationMarker = L.circleMarker([lat, lng], {
+                radius: 8,
+                color: '#1565C0',
+                weight: 3,
+                fillOpacity: 0.7
+            })
+                .addTo(referenceMap)
+                .bindPopup("Sua localização atual")
+                .openPopup();
+
+            if (addPointAfterCenter) {
+                addReferencePoint(lat, lng);
+            }
+
+            setTimeout(() => {
+                referenceMap.invalidateSize();
+            }, 300);
+
+            hideLoading();
+        },
+        (error) => {
+            console.error(error);
+            hideLoading();
+
+            if (error.code === 1) {
+                alert("Permissão de localização negada. Autorize a localização no navegador para usar esta função.");
+            } else if (error.code === 2) {
+                alert("Não foi possível identificar sua localização atual.");
+            } else {
+                alert("Tempo esgotado ao buscar localização. Tente novamente.");
+            }
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 12000,
+            maximumAge: 0
+        }
+    );
+}
+
 function addReferencePoint(lat, lng) {
     if (!referenceMap) {
         return;
@@ -641,10 +719,23 @@ function initReferenceMap() {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
 
-                referenceMap.setView([lat, lng], 14);
+                referenceMap.setView([lat, lng], 15);
+
+                if (currentLocationMarker) {
+                    referenceMap.removeLayer(currentLocationMarker);
+                }
+
+                currentLocationMarker = L.circleMarker([lat, lng], {
+                    radius: 8,
+                    color: '#1565C0',
+                    weight: 3,
+                    fillOpacity: 0.7
+                })
+                    .addTo(referenceMap)
+                    .bindPopup("Sua localização atual");
             },
             () => {
-                // Mantém o mapa no Brasil caso o usuário não autorize localização.
+                // Mantém o mapa no Brasil caso o usuário não autorize localização automaticamente.
             },
             {
                 enableHighAccuracy: true,
@@ -734,6 +825,10 @@ document.getElementById('btn-back-request').addEventListener('click', () => {
 });
 document.getElementById('btn-clear-map-points').addEventListener('click', () => {
     clearMapPoints();
+});
+
+document.getElementById('btn-current-location').addEventListener('click', () => {
+    centerMapOnCurrentLocation(false);
 });
 
 
