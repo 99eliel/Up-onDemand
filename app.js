@@ -388,6 +388,44 @@ document.getElementById('btn-save-profile').addEventListener('click', async () =
     }
 });
 
+
+function getStatusClass(status, archived = false) {
+    if (archived) {
+        return "status-archived";
+    }
+
+    if (status === "Aguardando valor" || status === "Pendente") {
+        return "status-waiting-price";
+    }
+
+    if (status === "Aguardando pagamento") {
+        return "status-waiting-payment";
+    }
+
+    if (status === "Pagamento informado") {
+        return "status-payment-informed";
+    }
+
+    if (status === "Na fila" || status === "Em produção") {
+        return "status-queue";
+    }
+
+    if (status === "Concluído") {
+        return "status-done";
+    }
+
+    return "status-waiting-price";
+}
+
+function getStatusText(status, archived = false) {
+    if (archived) {
+        return "Arquivado";
+    }
+
+    return status || "Aguardando valor";
+}
+
+
 async function loadUserOrders() {
     const container = document.getElementById('user-orders-container');
 
@@ -426,7 +464,8 @@ async function loadUserOrders() {
             return dateB - dateA;
         });
 
-        container.innerHTML = "";
+        container.innerHTML = `<div class="orders-list" id="user-orders-list"></div>`;
+        const ordersList = document.getElementById('user-orders-list');
 
         userOrders.forEach((order) => {
             const orderId = order.id;
@@ -438,11 +477,21 @@ async function loadUserOrders() {
 
             let paymentHtml = "";
 
+            if (status === "Aguardando valor" || status === "Pendente") {
+                paymentHtml = `
+                    <div class="payment-box warning">
+                        <p><strong>Aguardando orçamento</strong></p>
+                        <p>O administrador ainda vai inserir o valor e a chave PIX deste pedido.</p>
+                    </div>
+                `;
+            }
+
             if (status === "Aguardando pagamento") {
                 paymentHtml = `
-                    <div style="margin-top: 15px; padding: 12px; background: #F1F8E9; border-radius: 8px;">
-                        <p><strong>Valor:</strong> ${formatMoney(order.price)}</p>
-                        <p><strong>Chave PIX:</strong> ${escapeHtml(order.pixKey || "Não informada")}</p>
+                    <div class="payment-box">
+                        <p><strong>Pagamento liberado</strong></p>
+                        <p>Copie a chave PIX abaixo e informe quando finalizar.</p>
+                        <div class="pix-key-box">${escapeHtml(order.pixKey || "Não informada")}</div>
                         <button class="btn secondary full-width btn-copy-pix" data-pix="${escapeHtml(order.pixKey || "")}">
                             Copiar Chave PIX
                         </button>
@@ -455,7 +504,7 @@ async function loadUserOrders() {
 
             if (status === "Pagamento informado") {
                 paymentHtml = `
-                    <div style="margin-top: 15px; padding: 12px; background: #FFF3E0; border-radius: 8px;">
+                    <div class="payment-box info">
                         <p><strong>Pagamento informado.</strong></p>
                         <p>Aguarde a confirmação do administrador para o pedido entrar na fila.</p>
                     </div>
@@ -470,24 +519,57 @@ async function loadUserOrders() {
                 `;
             }
 
-            container.innerHTML += `
-                <div class="order-card">
-                    <p><strong>Data:</strong> ${dateStr}</p>
-                    <p><strong>Status:</strong> ${escapeHtml(status)}</p>
-                    <p><strong>Fazenda:</strong> ${escapeHtml(order.farmName)}</p>
-                    <p><strong>Talhão:</strong> ${escapeHtml(order.fieldName)}</p>
-                    <p><strong>Operação:</strong> ${escapeHtml(order.operationType)} (${escapeHtml(order.implementWidth)}m)</p>
-                    <p><strong>Monitor:</strong> ${escapeHtml(order.gpsModel)}</p>
-                    ${buildMapPointsHtml(order.mapPoints)}
-                    <p><strong>Valor:</strong> ${formatMoney(order.price)}</p>
+            const statusClass = getStatusClass(status, order.archived === true);
+            const statusText = getStatusText(status, order.archived === true);
+
+            ordersList.innerHTML += `
+                <div class="user-order-card">
+                    <div class="user-order-header">
+                        <div>
+                            <h4 class="user-order-title">${escapeHtml(order.fieldName || "Pedido sem talhão")}</h4>
+                            <p class="user-order-subtitle">${escapeHtml(order.farmName || "Fazenda não informada")} • ${dateStr}</p>
+                        </div>
+                        <span class="status-badge ${statusClass}">${escapeHtml(statusText)}</span>
+                    </div>
+
+                    <div class="order-info-grid">
+                        <div class="order-info-item">
+                            <span class="order-info-label">Valor</span>
+                            <span class="order-info-value">${formatMoney(order.price)}</span>
+                        </div>
+                        <div class="order-info-item">
+                            <span class="order-info-label">Operação</span>
+                            <span class="order-info-value">${escapeHtml(order.operationType || "—")}</span>
+                        </div>
+                        <div class="order-info-item">
+                            <span class="order-info-label">Largura</span>
+                            <span class="order-info-value">${escapeHtml(order.implementWidth || "—")}m</span>
+                        </div>
+                        <div class="order-info-item">
+                            <span class="order-info-label">Monitor</span>
+                            <span class="order-info-value">${escapeHtml(order.gpsModel || "—")}</span>
+                        </div>
+                    </div>
+
                     ${paymentHtml}
+
+                    <details class="order-details">
+                        <summary>Ver detalhes do pedido</summary>
+                        <div style="margin-top: 10px;">
+                            <p><strong>Fazenda:</strong> ${escapeHtml(order.farmName)}</p>
+                            <p><strong>Talhão:</strong> ${escapeHtml(order.fieldName)}</p>
+                            <p><strong>Sentido:</strong> ${escapeHtml(order.compassDegree || "0")}°</p>
+                            <p><strong>Observações:</strong> ${escapeHtml(order.observations || "Nenhuma")}</p>
+                            ${buildMapPointsHtml(order.mapPoints)}
+                        </div>
+                    </details>
                 </div>
             `;
         });
 
     } catch (error) {
         console.error(error);
-        container.innerHTML = "<p>Erro ao carregar seus pedidos. Tente atualizar a página. Se continuar, fale com o suporte.</p>";
+        container.innerHTML = "<p>Erro ao carregar seus pedidos. Atualize a página e tente novamente.</p>";
     }
 }
 
@@ -576,21 +658,19 @@ function drawReferencePolygon() {
 }
 
 function clearMapPoints() {
-    if (!referenceMap) {
-        return;
-    }
+    if (referenceMap) {
+        referenceMarkers.forEach(marker => {
+            referenceMap.removeLayer(marker);
+        });
 
-    referenceMarkers.forEach(marker => {
-        referenceMap.removeLayer(marker);
-    });
+        if (referencePolygon) {
+            referenceMap.removeLayer(referencePolygon);
+            referencePolygon = null;
+        }
+    }
 
     referenceMarkers = [];
     selectedMapPoints = [];
-
-    if (referencePolygon) {
-        referenceMap.removeLayer(referencePolygon);
-        referencePolygon = null;
-    }
 
     updateMapPointsStatus();
 }
@@ -704,9 +784,21 @@ function initReferenceMap() {
 
     referenceMap = L.map('reference-map').setView([-15.7801, -47.9292], 4);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    const normalMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 20,
         attribution: '&copy; OpenStreetMap'
+    });
+
+    const reliefMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 17,
+        attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap'
+    });
+
+    normalMap.addTo(referenceMap);
+
+    L.control.layers({
+        "Mapa normal": normalMap,
+        "Relevo / Topográfico": reliefMap
     }).addTo(referenceMap);
 
     referenceMap.on('click', (e) => {
@@ -788,12 +880,14 @@ function buildMapPointsHtml(points) {
 
     return `
         <div style="margin-top: 10px;">
-            <p><strong>Pontos de referência no mapa:</strong></p>
-            <ol style="margin-left: 20px;">
+            <p><strong>Pontos de referência:</strong> ${points.length} ponto(s) marcados</p>
+            <ol class="map-points-list">
                 ${pointsList}
             </ol>
-            <a href="${searchLink}" target="_blank" class="btn-secondary">Abrir Ponto 1 no Google Maps</a>
-            <a href="${routeLink}" target="_blank" class="btn-secondary">Ver Rota dos Pontos</a>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                <a href="${searchLink}" target="_blank" class="btn-secondary">Abrir Ponto 1 no Google Maps</a>
+                <a href="${routeLink}" target="_blank" class="btn-secondary">Ver Rota dos Pontos</a>
+            </div>
         </div>
     `;
 }
