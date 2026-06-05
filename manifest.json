@@ -1,6 +1,6 @@
 {
   "name": "UP AGRO On-Demand",
-  "short_name": "UP AGRO",
+  "short_name": "UP AGRO On-Demand",
   "description": "Linhas de Piloto Automático On-Demand",
   "start_url": "./index.html",
   "scope": "./",
