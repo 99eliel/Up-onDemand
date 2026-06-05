@@ -41,9 +41,11 @@ const hideLoading = () => document.getElementById('loading-overlay').style.displ
 
 const maskCPF = (val) => val.replace(/\D/g, "").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})/, "$1-$2").replace(/(-\d{2})\d+?$/, "$1");
 const maskPhone = (val) => val.replace(/\D/g, "").replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d)/, "$1-$2").replace(/(-\d{4})\d+?$/, "$1");
+const maskDate = (val) => val.replace(/\D/g, "").replace(/(\d{2})(\d)/, "$1/$2").replace(/(\d{2})(\d)/, "$1/$2").substring(0, 10);
 
 document.getElementById('login-cpf').addEventListener('input', (e) => e.target.value = maskCPF(e.target.value));
 document.getElementById('reg-whatsapp').addEventListener('input', (e) => e.target.value = maskPhone(e.target.value));
+document.getElementById('login-dob').addEventListener('input', (e) => e.target.value = maskDate(e.target.value));
 
 // ==========================================
 // CONFIGURAÇÕES GLOBAIS (LOGO E BANNER)
@@ -172,6 +174,7 @@ document.getElementById('btn-logout').addEventListener('click', () => {
     document.getElementById('login-form').reset();
     showScreen('login-screen');
 });
+
 // ==========================================
 // PERFIL (WHITE LABEL)
 // ==========================================
@@ -301,6 +304,7 @@ document.getElementById('btn-pay-pix').addEventListener('click', async () => {
         showScreen('profile-screen');
     } catch (e) { alert("Erro ao enviar pedido."); } finally { hideLoading(); }
 });
+
 // ==========================================
 // PAINEL ADMINISTRATIVO E SENHAS
 // ==========================================
