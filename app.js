@@ -9,7 +9,8 @@ import {
     getDocs,
     query,
     orderBy,
-    serverTimestamp
+    serverTimestamp,
+    where
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import {
     getStorage,
@@ -82,6 +83,32 @@ const maskDate = (val) => {
         .replace(/(\d{2})(\d)/, "$1/$2")
         .replace(/(\d{2})(\d)/, "$1/$2")
         .substring(0, 10);
+};
+
+const formatMoney = (value) => {
+    if (value === null || value === undefined || value === "") {
+        return "Aguardando valor";
+    }
+
+    return `R$ ${Number(value).toFixed(2).replace('.', ',')}`;
+};
+
+const escapeHtml = (value) => {
+    return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+};
+
+const copyText = async (text) => {
+    try {
+        await navigator.clipboard.writeText(text);
+        alert("Chave PIX copiada!");
+    } catch (error) {
+        alert("Não foi possível copiar automaticamente. Copie manualmente: " + text);
+    }
 };
 
 document.getElementById('login-cpf').addEventListener('input', (e) => {
@@ -274,7 +301,7 @@ document.getElementById('btn-logout').addEventListener('click', () => {
 });
 
 // ==========================================
-// PERFIL WHITE LABEL
+// PERFIL WHITE LABEL E PEDIDOS DO CLIENTE
 // ==========================================
 
 function setupProfileScreen() {
@@ -298,6 +325,8 @@ function setupProfileScreen() {
         toggleWL.checked = false;
         uploadArea.classList.add('hidden');
     }
+
+    loadUserOrders();
 }
 
 document.getElementById('toggle-white-label').addEventListener('change', (e) => {
@@ -354,15 +383,150 @@ document.getElementById('btn-save-profile').addEventListener('click', async () =
     }
 });
 
+async function loadUserOrders() {
+    const container = document.getElementById('user-orders-container');
+
+    if (!currentUserData || !currentUserData.cpf) {
+        container.innerHTML = "<p>Entre na conta para visualizar seus pedidos.</p>";
+        return;
+    }
+
+    container.innerHTML = "<p>Carregando pedidos...</p>";
+
+    try {
+        const q = query(
+            collection(db, "orders"),
+            where("userCpf", "==", currentUserData.cpf),
+            orderBy("createdAt", "desc")
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            container.innerHTML = "<p>Você ainda não possui pedidos.</p>";
+            return;
+        }
+
+        container.innerHTML = "";
+
+        querySnapshot.forEach((docSnap) => {
+            const order = docSnap.data();
+            const orderId = docSnap.id;
+
+            const status = order.status || "Aguardando valor";
+            const dateStr = order.createdAt
+                ? new Date(order.createdAt.toDate()).toLocaleDateString('pt-BR')
+                : 'Recente';
+
+            let paymentHtml = "";
+
+            if (status === "Aguardando pagamento") {
+                paymentHtml = `
+                    <div style="margin-top: 15px; padding: 12px; background: #F1F8E9; border-radius: 8px;">
+                        <p><strong>Valor:</strong> ${formatMoney(order.price)}</p>
+                        <p><strong>Chave PIX:</strong> ${escapeHtml(order.pixKey || "Não informada")}</p>
+                        <button class="btn secondary full-width btn-copy-pix" data-pix="${escapeHtml(order.pixKey || "")}">
+                            Copiar Chave PIX
+                        </button>
+                        <button class="btn primary full-width btn-user-payment-done" data-id="${orderId}" style="margin-top: 10px;">
+                            Já fiz o pagamento
+                        </button>
+                    </div>
+                `;
+            }
+
+            if (status === "Pagamento informado") {
+                paymentHtml = `
+                    <div style="margin-top: 15px; padding: 12px; background: #FFF3E0; border-radius: 8px;">
+                        <p><strong>Pagamento informado.</strong></p>
+                        <p>Aguarde a confirmação do administrador para o pedido entrar na fila.</p>
+                    </div>
+                `;
+            }
+
+            if (status === "Concluído" && order.finalFileUrl) {
+                paymentHtml = `
+                    <a href="${order.finalFileUrl}" target="_blank" class="btn secondary full-width" style="margin-top: 10px;">
+                        Baixar Arquivo Final
+                    </a>
+                `;
+            }
+
+            container.innerHTML += `
+                <div class="order-card">
+                    <p><strong>Data:</strong> ${dateStr}</p>
+                    <p><strong>Status:</strong> ${escapeHtml(status)}</p>
+                    <p><strong>Fazenda:</strong> ${escapeHtml(order.farmName)}</p>
+                    <p><strong>Talhão:</strong> ${escapeHtml(order.fieldName)}</p>
+                    <p><strong>Operação:</strong> ${escapeHtml(order.operationType)} (${escapeHtml(order.implementWidth)}m)</p>
+                    <p><strong>Monitor:</strong> ${escapeHtml(order.gpsModel)}</p>
+                    <p><strong>Valor:</strong> ${formatMoney(order.price)}</p>
+                    ${paymentHtml}
+                </div>
+            `;
+        });
+
+    } catch (error) {
+        console.error(error);
+        container.innerHTML = "<p>Erro ao carregar seus pedidos. Se o erro aparecer no console pedindo índice do Firestore, clique no link indicado pelo Firebase para criar o índice.</p>";
+    }
+}
+
+document.getElementById('user-orders-container').addEventListener('click', async (e) => {
+    if (e.target.classList.contains('btn-copy-pix')) {
+        const pixKey = e.target.getAttribute('data-pix');
+
+        if (!pixKey) {
+            return alert("Chave PIX não informada.");
+        }
+
+        copyText(pixKey);
+    }
+
+    if (e.target.classList.contains('btn-user-payment-done')) {
+        const orderId = e.target.getAttribute('data-id');
+
+        const confirmacao = confirm("Confirmar que você já realizou o pagamento deste pedido?");
+
+        if (!confirmacao) {
+            return;
+        }
+
+        showLoading('Informando pagamento...');
+
+        try {
+            await setDoc(doc(db, "orders", orderId), {
+                status: "Pagamento informado",
+                paymentInformed: true,
+                paymentInformedAt: serverTimestamp()
+            }, { merge: true });
+
+            alert("Pagamento informado! Aguarde a confirmação do administrador.");
+            loadUserOrders();
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao informar pagamento.");
+        } finally {
+            hideLoading();
+        }
+    }
+});
+
 // ==========================================
 // SOLICITAÇÃO E CHECKOUT
 // ==========================================
 
 document.getElementById('btn-next-step').addEventListener('click', () => {
+    document.getElementById('service-form').reset();
+    document.getElementById('gps-other-group').classList.add('hidden');
+    document.getElementById('gps-other-model').required = false;
+    selectedKmlFile = null;
+    document.getElementById('kml-filename').textContent = "Anexar Arquivo .KML ou .SHP (Zip) *";
     showScreen('request-screen');
 });
 
 document.getElementById('btn-back-profile').addEventListener('click', () => {
+    setupProfileScreen();
     showScreen('profile-screen');
 });
 
@@ -375,7 +539,21 @@ document.getElementById('kml-upload').addEventListener('change', (e) => {
 
     document.getElementById('kml-filename').textContent = selectedKmlFile
         ? `✔ ${selectedKmlFile.name}`
-        : "Anexar Arquivo *";
+        : "Anexar Arquivo .KML ou .SHP (Zip) *";
+});
+
+document.getElementById('gps-model').addEventListener('change', (e) => {
+    const otherGroup = document.getElementById('gps-other-group');
+    const otherInput = document.getElementById('gps-other-model');
+
+    if (e.target.value === "Outro") {
+        otherGroup.classList.remove('hidden');
+        otherInput.required = true;
+    } else {
+        otherGroup.classList.add('hidden');
+        otherInput.required = false;
+        otherInput.value = "";
+    }
 });
 
 document.getElementById('compass-slider').addEventListener('input', (e) => {
@@ -390,22 +568,34 @@ document.getElementById('service-form').addEventListener('submit', (e) => {
         return alert("Anexe o arquivo KML/SHP.");
     }
 
+    const gpsModelSelect = document.getElementById('gps-model').value;
+    const gpsOtherModel = document.getElementById('gps-other-model').value.trim();
+
+    if (gpsModelSelect === "Outro" && !gpsOtherModel) {
+        return alert("Informe qual é o modelo do monitor.");
+    }
+
+    const finalGpsModel = gpsModelSelect === "Outro"
+        ? `Outro - ${gpsOtherModel}`
+        : gpsModelSelect;
+
     currentOrderData = {
         farmName: document.getElementById('farm-name').value,
         fieldName: document.getElementById('field-name').value,
         operationType: document.getElementById('operation-type').value,
         implementWidth: document.getElementById('implement-width').value,
-        gpsModel: document.getElementById('gps-model').value,
+        gpsModel: finalGpsModel,
         compassDegree: document.getElementById('compass-slider').value,
         observations: document.getElementById('observations').value,
         fileName: selectedKmlFile.name
     };
 
     document.getElementById('order-summary-list').innerHTML = `
-        <li><strong>Fazenda:</strong> ${currentOrderData.farmName}</li>
-        <li><strong>Talhão:</strong> ${currentOrderData.fieldName}</li>
-        <li><strong>Operação:</strong> ${currentOrderData.operationType}</li>
-        <li><strong>Largura:</strong> ${currentOrderData.implementWidth}m</li>
+        <li><strong>Fazenda:</strong> ${escapeHtml(currentOrderData.farmName)}</li>
+        <li><strong>Talhão:</strong> ${escapeHtml(currentOrderData.fieldName)}</li>
+        <li><strong>Operação:</strong> ${escapeHtml(currentOrderData.operationType)}</li>
+        <li><strong>Largura:</strong> ${escapeHtml(currentOrderData.implementWidth)}m</li>
+        <li><strong>Monitor:</strong> ${escapeHtml(currentOrderData.gpsModel)}</li>
     `;
 
     document.getElementById('terms-checkbox').checked = false;
@@ -432,18 +622,24 @@ document.getElementById('btn-pay-pix').addEventListener('click', async () => {
             userName: currentUserData.name,
             userWhatsapp: currentUserData.whatsapp,
             fileUrl: fileUrl,
-            status: 'Aguardando pagamento',
+            status: 'Aguardando valor',
             paymentConfirmed: false,
+            paymentInformed: false,
+            archived: false,
             createdAt: serverTimestamp(),
-            price: 49.90
+            price: null,
+            pixKey: ""
         });
 
-        alert("Pedido enviado! Agora aguarde a confirmação do pagamento.");
+        alert("Pedido enviado! Aguarde o administrador inserir o valor e a chave PIX.");
 
         document.getElementById('service-form').reset();
+        document.getElementById('gps-other-group').classList.add('hidden');
+        document.getElementById('gps-other-model').required = false;
         selectedKmlFile = null;
-        document.getElementById('kml-filename').textContent = "Anexar Arquivo *";
+        document.getElementById('kml-filename').textContent = "Anexar Arquivo .KML ou .SHP (Zip) *";
 
+        setupProfileScreen();
         showScreen('profile-screen');
     } catch (e) {
         console.error(e);
@@ -656,41 +852,79 @@ document.getElementById('btn-save-global-logo').addEventListener('click', async 
 });
 
 // ==========================================
-// FILA DE PEDIDOS, PAGAMENTOS E ENTREGA
+// ADMIN: VALOR, PIX, FILA, CONCLUSÃO E ARQUIVO
 // ==========================================
 
+function buildAdminOrderBaseHtml(order, orderId) {
+    const status = order.status || "Aguardando valor";
+
+    const dateStr = order.createdAt
+        ? new Date(order.createdAt.toDate()).toLocaleDateString('pt-BR')
+        : 'Recente';
+
+    return `
+        <div class="order-card">
+            <p><strong>Data:</strong> ${dateStr}</p>
+            <p><strong>Status:</strong> ${escapeHtml(status)}</p>
+            <p><strong>Cliente:</strong> ${escapeHtml(order.userName || "Não informado")}</p>
+            <p><strong>WhatsApp:</strong> ${escapeHtml(order.userWhatsapp || "Não informado")}</p>
+            <p><strong>CPF:</strong> ${escapeHtml(order.userCpf || "Não informado")}</p>
+            <p><strong>Fazenda:</strong> ${escapeHtml(order.farmName || "Não informado")}</p>
+            <p><strong>Talhão:</strong> ${escapeHtml(order.fieldName || "Não informado")}</p>
+            <p><strong>Operação:</strong> ${escapeHtml(order.operationType || "Não informado")} (${escapeHtml(order.implementWidth || "0")}m)</p>
+            <p><strong>Monitor GNSS:</strong> ${escapeHtml(order.gpsModel || "Não informado")}</p>
+            <p><strong>Sentido:</strong> ${escapeHtml(order.compassDegree || "0")}°</p>
+            <p><strong>Observações:</strong> ${escapeHtml(order.observations || "Nenhuma")}</p>
+            <p><strong>Valor:</strong> ${formatMoney(order.price)}</p>
+            <p><strong>Chave PIX:</strong> ${escapeHtml(order.pixKey || "Não informada")}</p>
+            ${order.fileUrl ? `<a href="${order.fileUrl}" target="_blank" class="btn-secondary">Baixar KML/SHP</a>` : ''}
+            <input type="hidden" value="${escapeHtml(orderId)}">
+    `;
+}
+
 async function loadAdminOrders() {
+    const pricingContainer = document.getElementById('admin-pricing-container');
     const pendingContainer = document.getElementById('admin-pending-payments-container');
     const queueContainer = document.getElementById('admin-orders-container');
+    const completedContainer = document.getElementById('admin-completed-container');
+    const archivedContainer = document.getElementById('admin-archived-container');
 
+    pricingContainer.innerHTML = "<p>Buscando pedidos aguardando valor...</p>";
     pendingContainer.innerHTML = "<p>Buscando pagamentos pendentes...</p>";
     queueContainer.innerHTML = "<p>Buscando fila de pedidos...</p>";
+    completedContainer.innerHTML = "<p>Buscando concluídos...</p>";
+    archivedContainer.innerHTML = "<p>Buscando arquivados...</p>";
 
     try {
         const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
 
-        if (querySnapshot.empty) {
-            pendingContainer.innerHTML = "<p>Nenhum pagamento aguardando confirmação.</p>";
-            queueContainer.innerHTML = "<p>Nenhum pedido na fila.</p>";
-            return;
-        }
-
+        pricingContainer.innerHTML = "";
         pendingContainer.innerHTML = "";
         queueContainer.innerHTML = "";
+        completedContainer.innerHTML = "";
+        archivedContainer.innerHTML = "";
 
+        let hasPricing = false;
         let hasPending = false;
         let hasQueue = false;
+        let hasCompleted = false;
+        let hasArchived = false;
+
+        if (querySnapshot.empty) {
+            pricingContainer.innerHTML = "<p>Nenhum pedido aguardando valor.</p>";
+            pendingContainer.innerHTML = "<p>Nenhum pagamento aguardando confirmação.</p>";
+            queueContainer.innerHTML = "<p>Nenhum pedido na fila.</p>";
+            completedContainer.innerHTML = "<p>Nenhum pedido concluído.</p>";
+            archivedContainer.innerHTML = "<p>Nenhum pedido arquivado.</p>";
+            return;
+        }
 
         querySnapshot.forEach((docSnap) => {
             const order = docSnap.data();
             const orderId = docSnap.id;
-
-            const status = order.status || "Aguardando pagamento";
-
-            const dateStr = order.createdAt
-                ? new Date(order.createdAt.toDate()).toLocaleDateString('pt-BR')
-                : 'Recente';
+            const status = order.status || "Aguardando valor";
+            const isArchived = order.archived === true;
 
             const zapNumber = order.userWhatsapp
                 ? order.userWhatsapp.replace(/\D/g, "")
@@ -704,46 +938,85 @@ async function loadAdminOrders() {
                 ? `https://wa.me/55${zapNumber}?text=${msg}`
                 : '#';
 
-            const baseInfoHtml = `
-                <div class="order-card">
-                    <p><strong>Data:</strong> ${dateStr}</p>
-                    <p><strong>Status:</strong> ${status}</p>
-                    <p><strong>Cliente:</strong> ${order.userName || "Não informado"}</p>
-                    <p><strong>WhatsApp:</strong> ${order.userWhatsapp || "Não informado"}</p>
-                    <p><strong>CPF:</strong> ${order.userCpf || "Não informado"}</p>
-                    <p><strong>Fazenda:</strong> ${order.farmName || "Não informado"}</p>
-                    <p><strong>Talhão:</strong> ${order.fieldName || "Não informado"}</p>
-                    <p><strong>Operação:</strong> ${order.operationType || "Não informado"} (${order.implementWidth || "0"}m)</p>
-                    <p><strong>Monitor GNSS:</strong> ${order.gpsModel || "Não informado"}</p>
-                    <p><strong>Sentido:</strong> ${order.compassDegree || "0"}°</p>
-                    <p><strong>Observações:</strong> ${order.observations || "Nenhuma"}</p>
-                    <p><strong>Valor:</strong> R$ ${Number(order.price || 49.90).toFixed(2).replace('.', ',')}</p>
-                    ${order.fileUrl ? `<a href="${order.fileUrl}" target="_blank" class="btn-secondary">Baixar KML/SHP</a>` : ''}
-            `;
+            const baseInfoHtml = buildAdminOrderBaseHtml(order, orderId);
 
-            if (
-                status === "Aguardando pagamento" ||
-                status === "Pendente" ||
-                order.paymentConfirmed === false
-            ) {
+            if (isArchived) {
+                hasArchived = true;
+
+                archivedContainer.innerHTML += `
+                    ${baseInfoHtml}
+                        ${order.finalFileUrl ? `<a href="${order.finalFileUrl}" target="_blank" class="btn-secondary">Baixar Arquivo Final</a>` : ''}
+                        <button class="btn secondary full-width btn-unarchive-order" data-id="${orderId}" style="margin-top: 10px;">
+                            Desarquivar Pedido
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            if (status === "Aguardando valor" || status === "Pendente") {
+                hasPricing = true;
+
+                pricingContainer.innerHTML += `
+                    ${baseInfoHtml}
+                        <div style="margin-top: 15px;">
+                            <label>Valor do Pedido (R$)</label>
+                            <input 
+                                type="number" 
+                                step="0.01" 
+                                min="0" 
+                                class="form-control admin-price-input" 
+                                id="admin-price-${orderId}" 
+                                placeholder="Ex: 49.90"
+                                value="${order.price ? Number(order.price).toFixed(2) : ""}"
+                            >
+
+                            <label style="margin-top: 10px;">Chave PIX</label>
+                            <input 
+                                type="text" 
+                                class="form-control admin-pix-input" 
+                                id="admin-pix-${orderId}" 
+                                placeholder="Digite a chave PIX"
+                                value="${escapeHtml(order.pixKey || "")}"
+                            >
+
+                            <button class="btn primary full-width btn-set-price-pix" data-id="${orderId}" style="margin-top: 10px;">
+                                Salvar Valor e Enviar Cobrança ao Cliente
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            if (status === "Aguardando pagamento" || status === "Pagamento informado") {
                 hasPending = true;
 
                 pendingContainer.innerHTML += `
                     ${baseInfoHtml}
-                        <button 
-                            class="btn primary full-width btn-confirm-payment" 
-                            data-id="${orderId}">
-                            Confirmar Pagamento e Enviar para Fila
-                        </button>
+                        <div style="margin-top: 15px;">
+                            <p><strong>Situação:</strong> ${
+                                status === "Pagamento informado"
+                                    ? "Cliente informou que já pagou."
+                                    : "Cliente ainda não informou pagamento."
+                            }</p>
+
+                            <button class="btn primary full-width btn-confirm-payment" data-id="${orderId}">
+                                Confirmar Pagamento e Enviar para Fila
+                            </button>
+                        </div>
                     </div>
                 `;
-            } else {
+                return;
+            }
+
+            if (status === "Na fila" || status === "Em produção") {
                 hasQueue = true;
 
-                let adminActionHtml = "";
+                queueContainer.innerHTML += `
+                    ${baseInfoHtml}
+                        <a href="${zapLink}" target="_blank" class="btn-secondary">Avisar Cliente</a>
 
-                if (status !== "Concluído") {
-                    adminActionHtml = `
                         <div style="margin-top: 15px;">
                             <label>Anexar Arquivo Final (ZIP/PDF/KML/KMZ):</label>
                             <input 
@@ -755,26 +1028,33 @@ async function loadAdminOrders() {
                             <button 
                                 class="btn primary full-width btn-complete-order" 
                                 data-id="${orderId}" 
-                                data-cpf="${order.userCpf}">
+                                data-cpf="${escapeHtml(order.userCpf || "")}">
                                 Concluir e Enviar para Cliente
                             </button>
                         </div>
-                    `;
-                } else {
-                    adminActionHtml = `
+                    </div>
+                `;
+                return;
+            }
+
+            if (status === "Concluído") {
+                hasCompleted = true;
+
+                completedContainer.innerHTML += `
+                    ${baseInfoHtml}
                         <p style="color: green; font-weight: bold;">✔ Pedido Concluído</p>
                         ${order.finalFileUrl ? `<a href="${order.finalFileUrl}" target="_blank" class="btn-secondary">Baixar Arquivo Final</a>` : ''}
-                    `;
-                }
-
-                queueContainer.innerHTML += `
-                    ${baseInfoHtml}
-                        <a href="${zapLink}" target="_blank" class="btn-secondary">Avisar Cliente</a>
-                        ${adminActionHtml}
+                        <button class="btn secondary full-width btn-archive-order" data-id="${orderId}" style="margin-top: 10px;">
+                            Arquivar Pedido
+                        </button>
                     </div>
                 `;
             }
         });
+
+        if (!hasPricing) {
+            pricingContainer.innerHTML = "<p>Nenhum pedido aguardando valor.</p>";
+        }
 
         if (!hasPending) {
             pendingContainer.innerHTML = "<p>Nenhum pagamento aguardando confirmação.</p>";
@@ -784,12 +1064,62 @@ async function loadAdminOrders() {
             queueContainer.innerHTML = "<p>Nenhum pedido na fila.</p>";
         }
 
+        if (!hasCompleted) {
+            completedContainer.innerHTML = "<p>Nenhum pedido concluído.</p>";
+        }
+
+        if (!hasArchived) {
+            archivedContainer.innerHTML = "<p>Nenhum pedido arquivado.</p>";
+        }
+
     } catch (error) {
         console.error(error);
+        pricingContainer.innerHTML = "<p>Erro ao carregar pedidos aguardando valor.</p>";
         pendingContainer.innerHTML = "<p>Erro ao carregar pagamentos pendentes.</p>";
         queueContainer.innerHTML = "<p>Erro ao carregar a fila.</p>";
+        completedContainer.innerHTML = "<p>Erro ao carregar pedidos concluídos.</p>";
+        archivedContainer.innerHTML = "<p>Erro ao carregar pedidos arquivados.</p>";
     }
 }
+
+document.getElementById('admin-pricing-container').addEventListener('click', async (e) => {
+    if (e.target.classList.contains('btn-set-price-pix')) {
+        const orderId = e.target.getAttribute('data-id');
+
+        const priceInput = document.getElementById(`admin-price-${orderId}`);
+        const pixInput = document.getElementById(`admin-pix-${orderId}`);
+
+        const price = Number(priceInput.value);
+        const pixKey = pixInput.value.trim();
+
+        if (!price || price <= 0) {
+            return alert("Informe um valor válido para o pedido.");
+        }
+
+        if (!pixKey) {
+            return alert("Informe a chave PIX.");
+        }
+
+        showLoading('Salvando cobrança...');
+
+        try {
+            await setDoc(doc(db, "orders", orderId), {
+                price: price,
+                pixKey: pixKey,
+                status: "Aguardando pagamento",
+                pricedAt: serverTimestamp()
+            }, { merge: true });
+
+            alert("Valor e PIX salvos! A cobrança já aparece no perfil do cliente.");
+            loadAdminOrders();
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao salvar valor e PIX.");
+        } finally {
+            hideLoading();
+        }
+    }
+});
 
 document.getElementById('admin-pending-payments-container').addEventListener('click', async (e) => {
     if (e.target.classList.contains('btn-confirm-payment')) {
@@ -843,7 +1173,8 @@ document.getElementById('admin-orders-container').addEventListener('click', asyn
             await setDoc(doc(db, "orders", orderId), {
                 status: 'Concluído',
                 finalFileUrl: finalFileUrl,
-                completedAt: serverTimestamp()
+                completedAt: serverTimestamp(),
+                archived: false
             }, { merge: true });
 
             alert("Pedido concluído!");
@@ -851,6 +1182,58 @@ document.getElementById('admin-orders-container').addEventListener('click', asyn
         } catch (error) {
             console.error(error);
             alert("Erro ao enviar arquivo final.");
+        } finally {
+            hideLoading();
+        }
+    }
+});
+
+document.getElementById('admin-completed-container').addEventListener('click', async (e) => {
+    if (e.target.classList.contains('btn-archive-order')) {
+        const orderId = e.target.getAttribute('data-id');
+
+        const confirmacao = confirm("Arquivar este pedido concluído?");
+
+        if (!confirmacao) {
+            return;
+        }
+
+        showLoading('Arquivando pedido...');
+
+        try {
+            await setDoc(doc(db, "orders", orderId), {
+                archived: true,
+                archivedAt: serverTimestamp()
+            }, { merge: true });
+
+            alert("Pedido arquivado!");
+            loadAdminOrders();
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao arquivar pedido.");
+        } finally {
+            hideLoading();
+        }
+    }
+});
+
+document.getElementById('admin-archived-container').addEventListener('click', async (e) => {
+    if (e.target.classList.contains('btn-unarchive-order')) {
+        const orderId = e.target.getAttribute('data-id');
+
+        showLoading('Desarquivando pedido...');
+
+        try {
+            await setDoc(doc(db, "orders", orderId), {
+                archived: false,
+                unarchivedAt: serverTimestamp()
+            }, { merge: true });
+
+            alert("Pedido desarquivado!");
+            loadAdminOrders();
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao desarquivar pedido.");
         } finally {
             hideLoading();
         }
