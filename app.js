@@ -16,19 +16,22 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-// Variáveis Globais
+// ==========================================
+// VARIÁVEIS GLOBAIS E UTILITÁRIOS
+// ==========================================
 let currentUserData = null; 
 let selectedLogoFile = null;
 let selectedKmlFile = null;
 let currentOrderData = {};
 let tempLoginData = {};
+let deferredPrompt; // Para a instalação do PWA
 
-// Utilitários
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
     document.getElementById(screenId).classList.add('active');
     window.scrollTo(0, 0);
 }
+
 const showLoading = (msg) => {
     const overlay = document.getElementById('loading-overlay');
     overlay.querySelector('h2').textContent = msg || "Processando...";
@@ -36,12 +39,55 @@ const showLoading = (msg) => {
 };
 const hideLoading = () => document.getElementById('loading-overlay').style.display = 'none';
 
-// Máscaras
+// Máscaras de input
 const maskCPF = (val) => val.replace(/\D/g, "").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})/, "$1-$2").replace(/(-\d{2})\d+?$/, "$1");
 const maskPhone = (val) => val.replace(/\D/g, "").replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d)/, "$1-$2").replace(/(-\d{4})\d+?$/, "$1");
 
 document.getElementById('login-cpf').addEventListener('input', (e) => e.target.value = maskCPF(e.target.value));
 document.getElementById('reg-whatsapp').addEventListener('input', (e) => e.target.value = maskPhone(e.target.value));
+
+// ==========================================
+// BANNER GLOBAL E INSTALAÇÃO PWA
+// ==========================================
+// Carrega o Banner Global no Perfil
+async function loadGlobalBanner() {
+    try {
+        const docSnap = await getDoc(doc(db, "settings", "app"));
+        if (docSnap.exists() && docSnap.data().bannerUrl) {
+            const bannerImg = document.getElementById('app-global-banner');
+            bannerImg.src = docSnap.data().bannerUrl;
+            bannerImg.classList.remove('hidden');
+        }
+    } catch (error) { console.error("Erro ao carregar banner", error); }
+}
+
+// Lógica de Instalação (Android/Chrome)
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('install-banner').classList.remove('hidden');
+});
+
+document.getElementById('btn-install-pwa').addEventListener('click', async () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            document.getElementById('install-banner').classList.add('hidden');
+        }
+        deferredPrompt = null;
+    }
+});
+
+// Lógica de Instalação (iOS/Safari)
+const isIos = () => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
+if (isIos() && !isInStandaloneMode()) {
+    document.getElementById('ios-instruction-banner').classList.remove('hidden');
+}
+document.getElementById('btn-close-ios').addEventListener('click', () => {
+    document.getElementById('ios-instruction-banner').classList.add('hidden');
+});
 
 // ==========================================
 // LOGIN E CADASTRO
@@ -57,16 +103,14 @@ async function autoLogin(cpf) {
             currentUserData = docSnap.data();
             currentUserData.cpf = cpf;
             setupProfileScreen();
+            loadGlobalBanner(); // Carrega o banner quando entra
             showScreen('profile-screen');
         } else {
             localStorage.removeItem('upagri_user_cpf');
             showScreen('login-screen');
         }
-    } catch (error) {
-        showScreen('login-screen');
-    } finally {
-        hideLoading();
-    }
+    } catch (error) { showScreen('login-screen'); } 
+    finally { hideLoading(); }
 }
 
 document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -75,7 +119,6 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     const dob = document.getElementById('login-dob').value;
 
     if (cpf.length !== 11) return alert("CPF inválido.");
-
     showLoading('Verificando...');
     try {
         const docSnap = await getDoc(doc(db, "users", cpf));
@@ -85,19 +128,15 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
                 currentUserData = docSnap.data();
                 currentUserData.cpf = cpf;
                 setupProfileScreen();
+                loadGlobalBanner(); // Carrega o banner ao logar
                 showScreen('profile-screen');
-            } else {
-                alert("Data de Nascimento incorreta.");
-            }
+            } else { alert("Data de Nascimento incorreta."); }
         } else {
             tempLoginData = { cpf, dob };
             showScreen('register-screen');
         }
-    } catch (error) {
-        alert("Erro de conexão.");
-    } finally {
-        hideLoading();
-    }
+    } catch (error) { alert("Erro de conexão."); } 
+    finally { hideLoading(); }
 });
 
 document.getElementById('register-form').addEventListener('submit', async (e) => {
@@ -116,12 +155,10 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
         currentUserData = newUser;
         currentUserData.cpf = tempLoginData.cpf;
         setupProfileScreen();
+        loadGlobalBanner();
         showScreen('profile-screen');
-    } catch (error) {
-        alert("Erro no cadastro.");
-    } finally {
-        hideLoading();
-    }
+    } catch (error) { alert("Erro no cadastro."); } 
+    finally { hideLoading(); }
 });
 
 document.getElementById('btn-logout').addEventListener('click', () => {
@@ -132,7 +169,7 @@ document.getElementById('btn-logout').addEventListener('click', () => {
 });
 
 // ==========================================
-// PERFIL
+// PERFIL (WHITE LABEL)
 // ==========================================
 function setupProfileScreen() {
     document.getElementById('user-name').textContent = currentUserData.name;
@@ -160,15 +197,14 @@ document.getElementById('toggle-white-label').addEventListener('change', (e) => 
 });
 
 document.getElementById('logo-upload').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        selectedLogoFile = file;
+    if (e.target.files[0]) {
+        selectedLogoFile = e.target.files[0];
         const reader = new FileReader();
         reader.onload = (ev) => {
             document.getElementById('logo-preview').src = ev.target.result;
             document.getElementById('logo-preview-container').classList.remove('hidden');
         }
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(selectedLogoFile);
     }
 });
 
@@ -181,16 +217,16 @@ document.getElementById('btn-save-profile').addEventListener('click', async () =
             const snapshot = await uploadBytes(ref(storage, `logos/${currentUserData.cpf}_${selectedLogoFile.name}`), selectedLogoFile);
             logoUrl = await getDownloadURL(snapshot.ref);
         }
-        const updates = { whiteLabelActive: isWL, logoUrl: isWL ? logoUrl : "" };
-        await setDoc(doc(db, "users", currentUserData.cpf), updates, { merge: true });
-        currentUserData.whiteLabelActive = updates.whiteLabelActive;
-        currentUserData.logoUrl = updates.logoUrl;
+        await setDoc(doc(db, "users", currentUserData.cpf), { whiteLabelActive: isWL, logoUrl: isWL ? logoUrl : "" }, { merge: true });
+        currentUserData.whiteLabelActive = isWL;
+        currentUserData.logoUrl = isWL ? logoUrl : "";
         alert("Salvo!");
-    } catch (e) { alert("Erro ao salvar."); } finally { hideLoading(); }
+    } catch (e) { alert("Erro ao salvar."); } 
+    finally { hideLoading(); }
 });
 
 // ==========================================
-// SOLICITAÇÃO E CHECKOUT
+// SOLICITAÇÃO E CHECKOUT (TELA 2 e 3)
 // ==========================================
 document.getElementById('btn-next-step').addEventListener('click', () => showScreen('request-screen'));
 document.getElementById('btn-back-profile').addEventListener('click', () => showScreen('profile-screen'));
@@ -257,6 +293,7 @@ document.getElementById('btn-pay-pix').addEventListener('click', async () => {
         alert("Pedido Enviado!");
         document.getElementById('service-form').reset();
         selectedKmlFile = null;
+        document.getElementById('kml-filename').textContent = "Anexar Arquivo *";
         showScreen('profile-screen');
     } catch (e) { alert("Erro ao enviar pedido."); } finally { hideLoading(); }
 });
@@ -273,20 +310,15 @@ document.getElementById('btn-admin-panel').addEventListener('click', () => {
 });
 document.getElementById('btn-cancel-admin-login').addEventListener('click', () => adminModal.classList.add('hidden'));
 
-// Função para buscar senhas no banco ou criar padrão 0000
+// Busca senhas ou cria padrão
 async function getAdminPasswords() {
     const docRef = doc(db, "settings", "admin");
     const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-        return docSnap.data();
-    } else {
-        const defaultPass = { senha1: "0000", senha2: "0000" };
-        await setDoc(docRef, defaultPass);
-        return defaultPass;
-    }
+    if (docSnap.exists()) return docSnap.data();
+    await setDoc(docRef, { senha1: "0000", senha2: "0000" });
+    return { senha1: "0000", senha2: "0000" };
 }
 
-// Checagem de Senha para entrar no Painel
 document.getElementById('btn-confirm-admin-login').addEventListener('click', async () => {
     const inputPass = document.getElementById('admin-password-input').value;
     showLoading('Autenticando...');
@@ -295,16 +327,14 @@ document.getElementById('btn-confirm-admin-login').addEventListener('click', asy
         if (inputPass === senhas.senha1 || inputPass === senhas.senha2) {
             adminModal.classList.add('hidden');
             showScreen('admin-screen');
-            loadAdminOrders(); // Carrega os pedidos
-        } else {
-            alert("Senha incorreta!");
-        }
+            loadAdminOrders();
+        } else { alert("Senha incorreta!"); }
     } catch (e) { alert("Erro ao verificar senha."); } finally { hideLoading(); }
 });
 
 document.getElementById('btn-back-admin').addEventListener('click', () => showScreen('profile-screen'));
 
-// Configurações de Senha
+// Configuração de Senhas
 document.getElementById('btn-admin-settings').addEventListener('click', async () => {
     showLoading('');
     try {
@@ -323,12 +353,52 @@ document.getElementById('btn-save-admin-settings').addEventListener('click', asy
     showLoading('Salvando...');
     try {
         await setDoc(doc(db, "settings", "admin"), { senha1: s1, senha2: s2 });
-        alert("Senhas alteradas com sucesso!");
+        alert("Senhas alteradas!");
         adminSettingsModal.classList.add('hidden');
     } catch (e) { alert("Erro ao salvar."); } finally { hideLoading(); }
 });
 
-// Carregar fila de pedidos do banco
+// ==========================================
+// UPLOAD DO BANNER GLOBAL PELO ADMIN
+// ==========================================
+let adminSelectedBanner = null;
+
+document.getElementById('admin-banner-upload').addEventListener('change', (e) => {
+    if (e.target.files[0]) {
+        adminSelectedBanner = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const preview = document.getElementById('admin-banner-preview');
+            preview.src = ev.target.result;
+            preview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(adminSelectedBanner);
+    }
+});
+
+document.getElementById('btn-save-global-banner').addEventListener('click', async () => {
+    if (!adminSelectedBanner) return alert("Selecione uma imagem primeiro.");
+    showLoading('Salvando Banner...');
+    try {
+        const snapshot = await uploadBytes(ref(storage, `app_assets/global_banner_${new Date().getTime()}`), adminSelectedBanner);
+        const bannerUrl = await getDownloadURL(snapshot.ref);
+        
+        // Salva a URL do banner no documento de configurações gerais do app
+        await setDoc(doc(db, "settings", "app"), { bannerUrl: bannerUrl }, { merge: true });
+        alert("Banner global atualizado com sucesso! Todos os usuários verão a mudança.");
+        
+        // Atualiza a visualização do próprio admin na hora
+        document.getElementById('app-global-banner').src = bannerUrl;
+        document.getElementById('app-global-banner').classList.remove('hidden');
+    } catch (error) {
+        console.error(error);
+        alert("Erro ao salvar banner.");
+    } finally {
+        hideLoading();
+    }
+});
+
+// Carrega a fila de pedidos
 async function loadAdminOrders() {
     const container = document.getElementById('admin-orders-container');
     container.innerHTML = "<p>Buscando pedidos...</p>";
@@ -345,10 +415,8 @@ async function loadAdminOrders() {
         querySnapshot.forEach((docSnap) => {
             const order = docSnap.data();
             const dateStr = order.createdAt ? new Date(order.createdAt.toDate()).toLocaleDateString('pt-BR') : 'Recente';
-            
-            // Formatando o número para o link do WhatsApp (Tirando caracteres especiais)
             const zapNumber = order.userWhatsapp ? order.userWhatsapp.replace(/\D/g, "") : "";
-            const msg = encodeURIComponent(`Olá ${order.userName}, recebi sua solicitação do talhão ${order.fieldName} da fazenda ${order.farmName}.`);
+            const msg = encodeURIComponent(`Olá ${order.userName}, recebi sua solicitação do talhão ${order.fieldName}.`);
             const zapLink = zapNumber ? `https://wa.me/55${zapNumber}?text=${msg}` : '#';
 
             const cardHtml = `
@@ -361,7 +429,6 @@ async function loadAdminOrders() {
                         <p><strong>Cliente:</strong> ${order.userName}</p>
                         <p><strong>Fazenda:</strong> ${order.farmName} | <strong>Talhão:</strong> ${order.fieldName}</p>
                         <p><strong>Operação:</strong> ${order.operationType} (${order.implementWidth}m)</p>
-                        <p><strong>Rumo:</strong> ${order.compassDegree}°</p>
                     </div>
                     <div style="margin-top: 15px; display: flex; gap: 10px;">
                         <a href="${order.fileUrl}" target="_blank" class="btn secondary" style="flex:1; padding: 10px; text-decoration: none;">Baixar KML</a>
@@ -372,13 +439,12 @@ async function loadAdminOrders() {
             container.innerHTML += cardHtml;
         });
     } catch (error) {
-        console.error("Erro ao buscar pedidos:", error);
         container.innerHTML = "<p>Erro ao carregar a fila.</p>";
     }
 }
 
 // ==========================================
-// SERVICE WORKER
+// SERVICE WORKER (AUTO-UPDATE)
 // ==========================================
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then((reg) => reg.update());
