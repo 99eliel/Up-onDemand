@@ -47,20 +47,35 @@ document.getElementById('login-cpf').addEventListener('input', (e) => e.target.v
 document.getElementById('reg-whatsapp').addEventListener('input', (e) => e.target.value = maskPhone(e.target.value));
 
 // ==========================================
-// BANNER GLOBAL E INSTALAÇÃO PWA
+// CONFIGURAÇÕES GLOBAIS (LOGO E BANNER)
 // ==========================================
-// Carrega o Banner Global no Perfil
-async function loadGlobalBanner() {
+// Carrega a Logo e o Banner definidos pelo Admin assim que o site abre
+async function loadGlobalSettings() {
     try {
         const docSnap = await getDoc(doc(db, "settings", "app"));
-        if (docSnap.exists() && docSnap.data().bannerUrl) {
-            const bannerImg = document.getElementById('app-global-banner');
-            bannerImg.src = docSnap.data().bannerUrl;
-            bannerImg.classList.remove('hidden');
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.bannerUrl) {
+                const bannerImg = document.getElementById('app-global-banner');
+                bannerImg.src = data.bannerUrl;
+                bannerImg.classList.remove('hidden');
+            }
+            if (data.logoUrl) {
+                // Atualiza a logo na tela de login e na de cadastro
+                document.getElementById('main-app-logo').src = data.logoUrl;
+                document.getElementById('main-app-logo-reg').src = data.logoUrl;
+            }
         }
-    } catch (error) { console.error("Erro ao carregar banner", error); }
+    } catch (error) { console.error("Erro ao carregar configurações globais", error); }
 }
 
+// Chama a função imediatamente para a logo atualizar antes mesmo do login
+loadGlobalSettings();
+
+
+// ==========================================
+// INSTALAÇÃO PWA
+// ==========================================
 // Lógica de Instalação (Android/Chrome)
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -103,7 +118,6 @@ async function autoLogin(cpf) {
             currentUserData = docSnap.data();
             currentUserData.cpf = cpf;
             setupProfileScreen();
-            loadGlobalBanner(); // Carrega o banner quando entra
             showScreen('profile-screen');
         } else {
             localStorage.removeItem('upagri_user_cpf');
@@ -128,14 +142,13 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
                 currentUserData = docSnap.data();
                 currentUserData.cpf = cpf;
                 setupProfileScreen();
-                loadGlobalBanner(); // Carrega o banner ao logar
                 showScreen('profile-screen');
             } else { alert("Data de Nascimento incorreta."); }
         } else {
             tempLoginData = { cpf, dob };
             showScreen('register-screen');
         }
-    } catch (error) { alert("Erro de conexão."); } 
+    } catch (error) { alert("Erro de conexão: " + error.message); } 
     finally { hideLoading(); }
 });
 
@@ -155,9 +168,8 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
         currentUserData = newUser;
         currentUserData.cpf = tempLoginData.cpf;
         setupProfileScreen();
-        loadGlobalBanner();
         showScreen('profile-screen');
-    } catch (error) { alert("Erro no cadastro."); } 
+    } catch (error) { alert("Erro no cadastro: " + error.message); } 
     finally { hideLoading(); }
 });
 
@@ -359,10 +371,12 @@ document.getElementById('btn-save-admin-settings').addEventListener('click', asy
 });
 
 // ==========================================
-// UPLOAD DO BANNER GLOBAL PELO ADMIN
+// UPLOAD DO BANNER E LOGO GLOBAL (ADMIN)
 // ==========================================
 let adminSelectedBanner = null;
+let adminSelectedLogo = null;
 
+// Lógica para Trocar o Banner
 document.getElementById('admin-banner-upload').addEventListener('change', (e) => {
     if (e.target.files[0]) {
         adminSelectedBanner = e.target.files[0];
@@ -377,28 +391,53 @@ document.getElementById('admin-banner-upload').addEventListener('change', (e) =>
 });
 
 document.getElementById('btn-save-global-banner').addEventListener('click', async () => {
-    if (!adminSelectedBanner) return alert("Selecione uma imagem primeiro.");
+    if (!adminSelectedBanner) return alert("Selecione um banner primeiro.");
     showLoading('Salvando Banner...');
     try {
         const snapshot = await uploadBytes(ref(storage, `app_assets/global_banner_${new Date().getTime()}`), adminSelectedBanner);
         const bannerUrl = await getDownloadURL(snapshot.ref);
         
-        // Salva a URL do banner no documento de configurações gerais do app
         await setDoc(doc(db, "settings", "app"), { bannerUrl: bannerUrl }, { merge: true });
-        alert("Banner global atualizado com sucesso! Todos os usuários verão a mudança.");
+        alert("Banner global atualizado com sucesso!");
         
-        // Atualiza a visualização do próprio admin na hora
         document.getElementById('app-global-banner').src = bannerUrl;
         document.getElementById('app-global-banner').classList.remove('hidden');
-    } catch (error) {
-        console.error(error);
-        alert("Erro ao salvar banner.");
-    } finally {
-        hideLoading();
+    } catch (error) { alert("Erro ao salvar banner."); } finally { hideLoading(); }
+});
+
+// Lógica para Trocar a Logo
+document.getElementById('admin-logo-upload').addEventListener('change', (e) => {
+    if (e.target.files[0]) {
+        adminSelectedLogo = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const preview = document.getElementById('admin-logo-preview');
+            preview.src = ev.target.result;
+            preview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(adminSelectedLogo);
     }
 });
 
-// Carrega a fila de pedidos
+document.getElementById('btn-save-global-logo').addEventListener('click', async () => {
+    if (!adminSelectedLogo) return alert("Selecione uma logo primeiro.");
+    showLoading('Salvando Logo...');
+    try {
+        const snapshot = await uploadBytes(ref(storage, `app_assets/global_logo_${new Date().getTime()}`), adminSelectedLogo);
+        const logoUrl = await getDownloadURL(snapshot.ref);
+        
+        await setDoc(doc(db, "settings", "app"), { logoUrl: logoUrl }, { merge: true });
+        alert("Logo principal atualizada com sucesso!");
+        
+        document.getElementById('main-app-logo').src = logoUrl;
+        document.getElementById('main-app-logo-reg').src = logoUrl;
+    } catch (error) { alert("Erro ao salvar logo."); } finally { hideLoading(); }
+});
+
+
+// ==========================================
+// FILA DE PEDIDOS DO ADMIN
+// ==========================================
 async function loadAdminOrders() {
     const container = document.getElementById('admin-orders-container');
     container.innerHTML = "<p>Buscando pedidos...</p>";
