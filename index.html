@@ -1,18 +1,29 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+
     <title>UP AGRO On-Demand</title>
+
     <link rel="manifest" href="manifest.json">
+
     <link rel="icon" type="image/png" href="icon-192x192.png">
+
     <link rel="apple-touch-icon" href="icon-192x192.png">
+
     <meta name="theme-color" content="#2E7D32">
+
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
     <div id="install-banner" class="hidden" style="background-color: var(--primary-dark); color: white; padding: 12px; display: flex; justify-content: space-between; align-items: center; z-index: 50;">
@@ -27,121 +38,174 @@
     </div>
 
     <div id="login-screen" class="screen active">
+
         <div class="logo-container">
             <img id="main-app-logo" src="icon-192x192.png" alt="Logo UP AGRO" style="width: 140px; margin-bottom: 15px; border-radius: 16px;">
+
             <h1 style="font-size: 2.2rem;">UP AGRO</h1>
             <p>Linhas de Piloto Automático On-Demand</p>
         </div>
-        
+
         <div class="card" style="width: 100%; max-width: 400px; margin: 0 auto;">
+
             <h3 class="section-title text-center">Acesso ao Sistema</h3>
+
             <form id="login-form">
+
                 <div class="form-group">
                     <label for="login-cpf">CPF *</label>
                     <input type="text" id="login-cpf" class="form-control" placeholder="000.000.000-00" required maxlength="14">
                 </div>
+
                 <div class="form-group">
                     <label for="login-dob">Data de Nascimento *</label>
                     <input type="text" id="login-dob" class="form-control" placeholder="DD/MM/AAAA" inputmode="numeric" maxlength="10" required>
                 </div>
+
                 <button type="submit" class="btn primary full-width mt-15">Entrar no App ➔</button>
+
             </form>
+
         </div>
 
         <button id="btn-admin-panel" class="btn-text" style="color: var(--text-muted); margin-top: 25px; font-size: 0.9rem;">⚙️ Acesso Administrativo</button>
+
     </div>
 
     <div id="register-screen" class="screen">
+
         <div class="logo-container" style="margin-top: 20px; margin-bottom: 20px;">
             <img id="main-app-logo-reg" src="icon-192x192.png" alt="Logo UP AGRO" style="width: 100px; border-radius: 12px;">
         </div>
-        
+
         <div class="card" style="width: 100%; max-width: 400px; margin: 0 auto;">
+
             <h3 class="section-title">Completar Cadastro</h3>
+
             <p style="margin-bottom: 20px; font-size: 0.9rem; color: var(--text-muted);">
                 Parece que é seu primeiro acesso. Precisamos de mais alguns dados para gerar seus relatórios.
             </p>
+
             <form id="register-form">
+
                 <div class="form-group">
                     <label for="reg-name">Nome Completo *</label>
                     <input type="text" id="reg-name" class="form-control" placeholder="Ex: João da Silva" required>
                 </div>
+
                 <div class="form-group">
                     <label for="reg-whatsapp">WhatsApp *</label>
                     <input type="text" id="reg-whatsapp" class="form-control" placeholder="(00) 00000-0000" required maxlength="15">
                 </div>
+
                 <button type="submit" class="btn success full-width mt-15">Salvar e Entrar</button>
+
             </form>
+
         </div>
+
     </div>
 
     <div id="profile-screen" class="screen">
+
         <header class="app-header">
             <h2>Meu Perfil</h2>
             <button id="btn-logout" class="btn-text">Sair</button>
         </header>
+
         <main class="content">
+
             <img id="app-global-banner" class="hidden" src="" alt="Banner UP AGRO" style="width: 100%; max-height: 180px; object-fit: cover; border-radius: var(--border-radius); margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
 
             <div class="user-info">
                 <div class="avatar-placeholder" id="user-avatar-initials"></div>
+
                 <h3 id="user-name">Carregando...</h3>
+
                 <p id="user-phone"></p>
+
                 <p id="user-cpf" style="font-size: 0.8rem; color: var(--text-muted);"></p>
             </div>
+
             <div class="card white-label-section">
+
                 <h3>Perfil Consultor (White Label)</h3>
+
                 <p>Ative esta opção para que os relatórios em PDF sejam gerados com a sua logomarca.</p>
+
                 <div class="toggle-container">
+
                     <label class="switch">
                         <input type="checkbox" id="toggle-white-label">
                         <span class="slider round"></span>
                     </label>
+
                     <span>Ativar White Label</span>
+
                 </div>
+
                 <div id="logo-upload-area" class="upload-area hidden">
+
                     <label for="logo-upload" class="upload-label">
                         <span>Selecione sua Logomarca (PNG/JPG)</span>
                         <input type="file" id="logo-upload" accept="image/png, image/jpeg">
                     </label>
+
                     <div id="logo-preview-container" class="hidden">
                         <img id="logo-preview" src="" alt="Pré-visualização da Logo">
                     </div>
+
                     <button id="btn-save-profile" class="btn primary full-width">Salvar Configurações</button>
+
                 </div>
+
             </div>
-            
+
             <button id="btn-next-step" class="btn success full-width">Nova Solicitação de Serviço ➔</button>
+
         </main>
+
     </div>
 
     <div id="request-screen" class="screen">
+
         <header class="app-header">
             <button id="btn-back-profile" class="btn-text">⬅ Voltar</button>
             <h2>Novo Serviço</h2>
             <div style="width: 60px;"></div>
         </header>
+
         <main class="content">
+
             <form id="service-form" class="card">
+
                 <h3 class="section-title">1. Identificação</h3>
+
                 <div class="form-group">
                     <label>Nome da Fazenda *</label>
                     <input type="text" id="farm-name" class="form-control" required>
                 </div>
+
                 <div class="form-group">
                     <label>Nome do Talhão *</label>
                     <input type="text" id="field-name" class="form-control" required>
                 </div>
+
                 <hr class="divider">
+
                 <h3 class="section-title">2. Geometria da Área</h3>
+
                 <div class="form-group">
                     <label for="kml-upload" class="upload-label file-upload-label">
                         <span id="kml-filename">Anexar Arquivo .KML ou .SHP (Zip) *</span>
                         <input type="file" id="kml-upload" accept=".kml,.zip" required>
                     </label>
                 </div>
+
                 <hr class="divider">
+
                 <h3 class="section-title">3. Dados Técnicos da Operação</h3>
+
                 <div class="form-group">
                     <label>Objetivo da Operação *</label>
                     <select id="operation-type" class="form-control" required>
@@ -152,10 +216,12 @@
                         <option value="Preparo">Preparo de Solo</option>
                     </select>
                 </div>
+
                 <div class="form-group">
                     <label>Largura Útil do Implemento (Metros) *</label>
                     <input type="number" id="implement-width" class="form-control" step="0.01" required>
                 </div>
+
                 <div class="form-group">
                     <label>Marca/Modelo do Monitor GNSS *</label>
                     <select id="gps-model" class="form-control" required>
@@ -167,106 +233,171 @@
                         <option value="Outro">Outro</option>
                     </select>
                 </div>
+
                 <div class="form-group compass-group">
                     <label>Sentido Sugerido (Graus): <span id="compass-value">0°</span></label>
+
                     <div class="compass-container">
                         <div id="compass-arrow" class="compass-arrow">⬆</div>
                     </div>
+
                     <input type="range" id="compass-slider" class="form-control range-slider" min="0" max="359" value="0">
                 </div>
+
                 <div class="form-group">
                     <label>Observações</label>
                     <textarea id="observations" class="form-control" rows="3"></textarea>
                 </div>
+
                 <button type="submit" class="btn success full-width">Avançar para Pagamento ➔</button>
+
             </form>
+
         </main>
+
     </div>
 
     <div id="checkout-screen" class="screen">
+
         <header class="app-header">
             <button id="btn-back-request" class="btn-text">⬅ Voltar</button>
             <h2>Finalizar Pedido</h2>
             <div style="width: 60px;"></div>
         </header>
+
         <main class="content">
+
             <div class="card">
+
                 <h3 class="section-title">Resumo do Pedido</h3>
+
                 <ul id="order-summary-list" class="summary-list"></ul>
+
                 <hr class="divider">
+
                 <h2 style="color: var(--primary-dark); text-align: center;">Total: R$ 49,90</h2>
+
             </div>
+
             <div class="card warning-card">
+
                 <h3 class="section-title" style="color: #D84315;">⚠ Termo de Responsabilidade</h3>
+
                 <p>Compreendo que a precisão das linhas geradas depende exclusivamente da qualidade do arquivo enviado e das medidas inseridas.</p>
+
                 <label class="checkbox-label mt-15">
                     <input type="checkbox" id="terms-checkbox" class="large-checkbox">
                     <span>Li e concordo com os termos.</span>
                 </label>
+
             </div>
+
             <div class="payment-methods">
                 <button id="btn-pay-pix" class="btn primary full-width" disabled>Gerar PIX e Concluir</button>
             </div>
+
         </main>
+
     </div>
 
     <div id="admin-screen" class="screen">
+
         <header class="app-header" style="background-color: #1B5E20;">
             <button id="btn-back-admin" class="btn-text">⬅ Sair do Painel</button>
             <h2>Painel Adm</h2>
             <button id="btn-admin-settings" class="btn-text">⚙️ Configurações</button>
         </header>
+
         <main class="content">
+
             <div class="card" style="margin-bottom: 25px; border-left: 5px solid var(--secondary-color);">
+
                 <h3 class="section-title">Personalização</h3>
+
                 <div class="form-group">
                     <label>Alterar Logo (Tela de Acesso)</label>
                     <input type="file" id="admin-logo-upload" class="form-control" accept="image/png, image/jpeg">
                     <img id="admin-logo-preview" class="hidden" src="" style="width: 80px; margin-top: 10px; border-radius: 8px;">
                     <button id="btn-save-global-logo" class="btn secondary full-width mt-10">Salvar Nova Logo</button>
                 </div>
+
                 <hr class="divider">
+
                 <div class="form-group">
                     <label>Alterar Banner Principal (Perfil)</label>
                     <input type="file" id="admin-banner-upload" class="form-control" accept="image/png, image/jpeg">
                     <img id="admin-banner-preview" class="hidden" src="" style="width: 100%; margin-top: 10px; border-radius: 8px;">
                     <button id="btn-save-global-banner" class="btn primary full-width mt-10">Salvar Novo Banner</button>
                 </div>
+
             </div>
+
+            <h3 class="section-title">Pagamentos Aguardando Confirmação</h3>
+
+            <p style="margin-bottom: 20px; color: var(--text-muted); font-size: 0.9rem;">
+                Confirme o pagamento para liberar o pedido na fila de produção.
+            </p>
+
+            <div id="admin-pending-payments-container"></div>
+
+            <hr class="divider">
+
             <h3 class="section-title">Fila de Pedidos</h3>
-            <p style="margin-bottom: 20px; color: var(--text-muted); font-size: 0.9rem;">Pedidos mais recentes aparecem no topo.</p>
+
+            <p style="margin-bottom: 20px; color: var(--text-muted); font-size: 0.9rem;">
+                Somente pedidos com pagamento confirmado aparecem aqui.
+            </p>
+
             <div id="admin-orders-container"></div>
+
         </main>
+
     </div>
 
     <div id="admin-login-modal" class="modal hidden">
+
         <div class="modal-content card">
+
             <h3 class="section-title">Acesso Restrito</h3>
-            <p style="font-size: 0.9rem; margin-bottom: 15px; color: var(--text-muted);">Digite uma das senhas de administrador para acessar.</p>
+
+            <p style="font-size: 0.9rem; margin-bottom: 15px; color: var(--text-muted);">
+                Digite uma das senhas de administrador para acessar.
+            </p>
+
             <input type="password" id="admin-password-input" class="form-control" placeholder="Senha">
+
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button id="btn-cancel-admin-login" class="btn secondary full-width">Cancelar</button>
                 <button id="btn-confirm-admin-login" class="btn primary full-width">Entrar</button>
             </div>
+
         </div>
+
     </div>
 
     <div id="admin-settings-modal" class="modal hidden">
+
         <div class="modal-content card">
+
             <h3 class="section-title">Alterar Senhas do Painel</h3>
+
             <div class="form-group">
                 <label>Senha 1</label>
                 <input type="text" id="admin-pass-1" class="form-control">
             </div>
+
             <div class="form-group">
                 <label>Senha 2</label>
                 <input type="text" id="admin-pass-2" class="form-control">
             </div>
+
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button id="btn-cancel-admin-settings" class="btn secondary full-width">Cancelar</button>
                 <button id="btn-save-admin-settings" class="btn success full-width">Salvar</button>
             </div>
+
         </div>
+
     </div>
 
     <div id="loading-overlay" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:999; display:flex; flex-direction:column; justify-content:center; align-items:center;">
@@ -274,5 +405,7 @@
     </div>
 
     <script type="module" src="app.js"></script>
+
 </body>
+
 </html>
