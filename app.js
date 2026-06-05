@@ -24,7 +24,7 @@ let selectedLogoFile = null;
 let selectedKmlFile = null;
 let currentOrderData = {};
 let tempLoginData = {};
-let deferredPrompt; // Para a instalação do PWA
+let deferredPrompt; 
 
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
@@ -39,7 +39,6 @@ const showLoading = (msg) => {
 };
 const hideLoading = () => document.getElementById('loading-overlay').style.display = 'none';
 
-// Máscaras de input
 const maskCPF = (val) => val.replace(/\D/g, "").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d{1,2})/, "$1-$2").replace(/(-\d{2})\d+?$/, "$1");
 const maskPhone = (val) => val.replace(/\D/g, "").replace(/(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d)/, "$1-$2").replace(/(-\d{4})\d+?$/, "$1");
 
@@ -49,7 +48,6 @@ document.getElementById('reg-whatsapp').addEventListener('input', (e) => e.targe
 // ==========================================
 // CONFIGURAÇÕES GLOBAIS (LOGO E BANNER)
 // ==========================================
-// Carrega a Logo e o Banner definidos pelo Admin assim que o site abre
 async function loadGlobalSettings() {
     try {
         const docSnap = await getDoc(doc(db, "settings", "app"));
@@ -61,7 +59,6 @@ async function loadGlobalSettings() {
                 bannerImg.classList.remove('hidden');
             }
             if (data.logoUrl) {
-                // Atualiza a logo na tela de login e na de cadastro
                 document.getElementById('main-app-logo').src = data.logoUrl;
                 document.getElementById('main-app-logo-reg').src = data.logoUrl;
             }
@@ -69,14 +66,11 @@ async function loadGlobalSettings() {
     } catch (error) { console.error("Erro ao carregar configurações globais", error); }
 }
 
-// Chama a função imediatamente para a logo atualizar antes mesmo do login
 loadGlobalSettings();
-
 
 // ==========================================
 // INSTALAÇÃO PWA
 // ==========================================
-// Lógica de Instalação (Android/Chrome)
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
@@ -94,7 +88,6 @@ document.getElementById('btn-install-pwa').addEventListener('click', async () =>
     }
 });
 
-// Lógica de Instalação (iOS/Safari)
 const isIos = () => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
 const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
 if (isIos() && !isInStandaloneMode()) {
@@ -179,7 +172,6 @@ document.getElementById('btn-logout').addEventListener('click', () => {
     document.getElementById('login-form').reset();
     showScreen('login-screen');
 });
-
 // ==========================================
 // PERFIL (WHITE LABEL)
 // ==========================================
@@ -244,19 +236,16 @@ document.getElementById('btn-next-step').addEventListener('click', () => showScr
 document.getElementById('btn-back-profile').addEventListener('click', () => showScreen('profile-screen'));
 document.getElementById('btn-back-request').addEventListener('click', () => showScreen('request-screen'));
 
-// Captura do Arquivo KML na Tela 2
 document.getElementById('kml-upload').addEventListener('change', (e) => {
     selectedKmlFile = e.target.files[0];
     document.getElementById('kml-filename').textContent = selectedKmlFile ? `✔ ${selectedKmlFile.name}` : "Anexar Arquivo *";
 });
 
-// Bússola na Tela 2
 document.getElementById('compass-slider').addEventListener('input', (e) => {
     document.getElementById('compass-arrow').style.transform = `rotate(${e.target.value}deg)`;
     document.getElementById('compass-value').textContent = `${e.target.value}°`;
 });
 
-// Avançar para a Tela 3 (Checkout)
 document.getElementById('service-form').addEventListener('submit', (e) => {
     e.preventDefault();
     if (!selectedKmlFile) return alert("Anexe o arquivo KML/SHP.");
@@ -272,35 +261,28 @@ document.getElementById('service-form').addEventListener('submit', (e) => {
         fileName: selectedKmlFile.name
     };
 
-    // Preenche o resumo na Tela 3
     document.getElementById('order-summary-list').innerHTML = `
         <li><strong>Fazenda:</strong> ${currentOrderData.farmName}</li>
         <li><strong>Talhão:</strong> ${currentOrderData.fieldName}</li>
         <li><strong>Operação:</strong> ${currentOrderData.operationType}</li>
         <li><strong>Largura:</strong> ${currentOrderData.implementWidth}m</li>
     `;
-    
-    // Reseta o botão de pagamento
     document.getElementById('terms-checkbox').checked = false;
     document.getElementById('btn-pay-pix').disabled = true;
     showScreen('checkout-screen');
 });
 
-// Libera o pagamento apenas se aceitar os termos
 document.getElementById('terms-checkbox').addEventListener('change', (e) => {
     document.getElementById('btn-pay-pix').disabled = !e.target.checked;
 });
 
-// Finalizar Pedido (Upload KML e Salvar no Banco)
 document.getElementById('btn-pay-pix').addEventListener('click', async () => {
     showLoading('Enviando...');
     try {
-        // 1. Sobe o KML pro Storage
         const filePath = `orders_files/${currentUserData.cpf}/${new Date().getTime()}_${selectedKmlFile.name}`;
         const snapshot = await uploadBytes(ref(storage, filePath), selectedKmlFile);
         const fileUrl = await getDownloadURL(snapshot.ref);
 
-        // 2. Cria o pedido no Firestore
         await addDoc(collection(db, "orders"), {
             ...currentOrderData,
             userCpf: currentUserData.cpf,
@@ -312,20 +294,13 @@ document.getElementById('btn-pay-pix').addEventListener('click', async () => {
             price: 49.90
         });
 
-        alert("Pedido Enviado com Sucesso!");
-        
-        // 3. Limpa o formulário e volta pro perfil
+        alert("Pedido Enviado!");
         document.getElementById('service-form').reset();
         selectedKmlFile = null;
         document.getElementById('kml-filename').textContent = "Anexar Arquivo *";
         showScreen('profile-screen');
-    } catch (e) { 
-        alert("Erro ao enviar pedido."); 
-    } finally { 
-        hideLoading(); 
-    }
+    } catch (e) { alert("Erro ao enviar pedido."); } finally { hideLoading(); }
 });
-
 // ==========================================
 // PAINEL ADMINISTRATIVO E SENHAS
 // ==========================================
@@ -338,7 +313,6 @@ document.getElementById('btn-admin-panel').addEventListener('click', () => {
 });
 document.getElementById('btn-cancel-admin-login').addEventListener('click', () => adminModal.classList.add('hidden'));
 
-// Busca senhas ou cria padrão
 async function getAdminPasswords() {
     const docRef = doc(db, "settings", "admin");
     const docSnap = await getDoc(docRef);
@@ -360,9 +334,8 @@ document.getElementById('btn-confirm-admin-login').addEventListener('click', asy
     } catch (e) { alert("Erro ao verificar senha."); } finally { hideLoading(); }
 });
 
-document.getElementById('btn-back-admin').addEventListener('click', () => showScreen('login-screen')); // Volta pro Início
+document.getElementById('btn-back-admin').addEventListener('click', () => showScreen('login-screen'));
 
-// Configuração de Senhas
 document.getElementById('btn-admin-settings').addEventListener('click', async () => {
     showLoading('');
     try {
@@ -386,14 +359,12 @@ document.getElementById('btn-save-admin-settings').addEventListener('click', asy
     } catch (e) { alert("Erro ao salvar."); } finally { hideLoading(); }
 });
 
-// --- FIM DA PARTE 2.2.A ---
 // ==========================================
 // UPLOAD DO BANNER E LOGO GLOBAL (ADMIN)
 // ==========================================
 let adminSelectedBanner = null;
 let adminSelectedLogo = null;
 
-// Lógica para Trocar o Banner
 document.getElementById('admin-banner-upload').addEventListener('change', (e) => {
     if (e.target.files[0]) {
         adminSelectedBanner = e.target.files[0];
@@ -413,16 +384,13 @@ document.getElementById('btn-save-global-banner').addEventListener('click', asyn
     try {
         const snapshot = await uploadBytes(ref(storage, `app_assets/global_banner_${new Date().getTime()}`), adminSelectedBanner);
         const bannerUrl = await getDownloadURL(snapshot.ref);
-        
         await setDoc(doc(db, "settings", "app"), { bannerUrl: bannerUrl }, { merge: true });
-        alert("Banner global atualizado com sucesso!");
-        
+        alert("Banner global atualizado!");
         document.getElementById('app-global-banner').src = bannerUrl;
         document.getElementById('app-global-banner').classList.remove('hidden');
     } catch (error) { alert("Erro ao salvar banner."); } finally { hideLoading(); }
 });
 
-// Lógica para Trocar a Logo
 document.getElementById('admin-logo-upload').addEventListener('change', (e) => {
     if (e.target.files[0]) {
         adminSelectedLogo = e.target.files[0];
@@ -442,18 +410,15 @@ document.getElementById('btn-save-global-logo').addEventListener('click', async 
     try {
         const snapshot = await uploadBytes(ref(storage, `app_assets/global_logo_${new Date().getTime()}`), adminSelectedLogo);
         const logoUrl = await getDownloadURL(snapshot.ref);
-        
         await setDoc(doc(db, "settings", "app"), { logoUrl: logoUrl }, { merge: true });
-        alert("Logo principal atualizada com sucesso!");
-        
+        alert("Logo principal atualizada!");
         document.getElementById('main-app-logo').src = logoUrl;
         document.getElementById('main-app-logo-reg').src = logoUrl;
     } catch (error) { alert("Erro ao salvar logo."); } finally { hideLoading(); }
 });
 
-
 // ==========================================
-// FILA DE PEDIDOS DO ADMIN
+// FILA DE PEDIDOS DO ADMIN E ENTREGA
 // ==========================================
 async function loadAdminOrders() {
     const container = document.getElementById('admin-orders-container');
@@ -470,16 +435,34 @@ async function loadAdminOrders() {
         container.innerHTML = "";
         querySnapshot.forEach((docSnap) => {
             const order = docSnap.data();
+            const orderId = docSnap.id;
             const dateStr = order.createdAt ? new Date(order.createdAt.toDate()).toLocaleDateString('pt-BR') : 'Recente';
             const zapNumber = order.userWhatsapp ? order.userWhatsapp.replace(/\D/g, "") : "";
-            const msg = encodeURIComponent(`Olá ${order.userName}, recebi sua solicitação do talhão ${order.fieldName}.`);
+            const msg = encodeURIComponent(`Olá ${order.userName}, seu projeto do talhão ${order.fieldName} está pronto!`);
             const zapLink = zapNumber ? `https://wa.me/55${zapNumber}?text=${msg}` : '#';
+
+            let adminActionHtml = '';
+            if (order.status !== 'Concluído') {
+                adminActionHtml = `
+                    <div style="margin-top: 15px; padding: 15px; background: #F9FBE7; border-radius: 8px; border: 1px dashed #C0CA33;">
+                        <label style="font-size: 0.85rem; font-weight: bold; color: var(--primary-dark);">Anexar Arquivo Final (ZIP/PDF):</label>
+                        <input type="file" id="upload-final-${orderId}" style="width: 100%; margin: 8px 0; font-size: 0.85rem;" accept=".zip,.pdf">
+                        <button data-id="${orderId}" data-cpf="${order.userCpf}" class="btn success full-width btn-complete-order" style="padding: 10px; margin-top: 5px;">Concluir e Enviar para Cliente</button>
+                    </div>
+                `;
+            } else {
+                adminActionHtml = `
+                    <div style="margin-top: 15px; padding: 10px; background: #E8F5E9; border-radius: 8px; color: #2E7D32; font-weight: bold; text-align: center;">
+                        ✔ Pedido Concluído (Arquivo Enviado)
+                    </div>
+                `;
+            }
 
             const cardHtml = `
                 <div class="card order-card">
                     <div class="order-header">
                         <span>Data: <strong>${dateStr}</strong></span>
-                        <span style="color: var(--primary-color); font-weight: bold;">${order.status}</span>
+                        <span style="color: ${order.status === 'Concluído' ? '#2E7D32' : '#E65100'}; font-weight: bold;">${order.status}</span>
                     </div>
                     <div class="order-details">
                         <p><strong>Cliente:</strong> ${order.userName}</p>
@@ -487,21 +470,44 @@ async function loadAdminOrders() {
                         <p><strong>Operação:</strong> ${order.operationType} (${order.implementWidth}m)</p>
                     </div>
                     <div style="margin-top: 15px; display: flex; gap: 10px;">
-                        <a href="${order.fileUrl}" target="_blank" class="btn secondary" style="flex:1; padding: 10px; text-decoration: none;">Baixar KML</a>
-                        <a href="${zapLink}" target="_blank" class="btn-whatsapp" style="flex:1;">📱 WhatsApp</a>
+                        <a href="${order.fileUrl}" target="_blank" class="btn secondary" style="flex:1; padding: 10px; text-decoration: none; text-align: center;">Baixar KML</a>
+                        <a href="${zapLink}" target="_blank" class="btn-whatsapp" style="flex:1; text-align: center;">📱 Avisar</a>
                     </div>
+                    ${adminActionHtml}
                 </div>
             `;
             container.innerHTML += cardHtml;
         });
-    } catch (error) {
-        container.innerHTML = "<p>Erro ao carregar a fila.</p>";
-    }
+    } catch (error) { container.innerHTML = "<p>Erro ao carregar a fila.</p>"; }
 }
 
-// ==========================================
-// SERVICE WORKER (AUTO-UPDATE)
-// ==========================================
+document.getElementById('admin-orders-container').addEventListener('click', async (e) => {
+    if (e.target.classList.contains('btn-complete-order')) {
+        const orderId = e.target.getAttribute('data-id');
+        const userCpf = e.target.getAttribute('data-cpf');
+        const fileInput = document.getElementById(`upload-final-${orderId}`);
+        const file = fileInput.files[0];
+
+        if (!file) return alert("Selecione o arquivo final (.zip ou .pdf).");
+
+        showLoading('Enviando Arquivo Final...');
+        try {
+            const filePath = `completed_orders/${userCpf}/${new Date().getTime()}_${file.name}`;
+            const snapshot = await uploadBytes(ref(storage, filePath), file);
+            const finalFileUrl = await getDownloadURL(snapshot.ref);
+
+            await setDoc(doc(db, "orders", orderId), {
+                status: 'Concluído',
+                finalFileUrl: finalFileUrl,
+                completedAt: serverTimestamp()
+            }, { merge: true });
+
+            alert("Pedido concluído!");
+            loadAdminOrders();
+        } catch (error) { alert("Erro ao enviar arquivo final."); } finally { hideLoading(); }
+    }
+});
+
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then((reg) => reg.update());
     let refreshing;
