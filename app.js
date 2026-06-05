@@ -244,16 +244,19 @@ document.getElementById('btn-next-step').addEventListener('click', () => showScr
 document.getElementById('btn-back-profile').addEventListener('click', () => showScreen('profile-screen'));
 document.getElementById('btn-back-request').addEventListener('click', () => showScreen('request-screen'));
 
+// Captura do Arquivo KML na Tela 2
 document.getElementById('kml-upload').addEventListener('change', (e) => {
     selectedKmlFile = e.target.files[0];
     document.getElementById('kml-filename').textContent = selectedKmlFile ? `✔ ${selectedKmlFile.name}` : "Anexar Arquivo *";
 });
 
+// Bússola na Tela 2
 document.getElementById('compass-slider').addEventListener('input', (e) => {
     document.getElementById('compass-arrow').style.transform = `rotate(${e.target.value}deg)`;
     document.getElementById('compass-value').textContent = `${e.target.value}°`;
 });
 
+// Avançar para a Tela 3 (Checkout)
 document.getElementById('service-form').addEventListener('submit', (e) => {
     e.preventDefault();
     if (!selectedKmlFile) return alert("Anexe o arquivo KML/SHP.");
@@ -269,28 +272,35 @@ document.getElementById('service-form').addEventListener('submit', (e) => {
         fileName: selectedKmlFile.name
     };
 
+    // Preenche o resumo na Tela 3
     document.getElementById('order-summary-list').innerHTML = `
         <li><strong>Fazenda:</strong> ${currentOrderData.farmName}</li>
         <li><strong>Talhão:</strong> ${currentOrderData.fieldName}</li>
         <li><strong>Operação:</strong> ${currentOrderData.operationType}</li>
         <li><strong>Largura:</strong> ${currentOrderData.implementWidth}m</li>
     `;
+    
+    // Reseta o botão de pagamento
     document.getElementById('terms-checkbox').checked = false;
     document.getElementById('btn-pay-pix').disabled = true;
     showScreen('checkout-screen');
 });
 
+// Libera o pagamento apenas se aceitar os termos
 document.getElementById('terms-checkbox').addEventListener('change', (e) => {
     document.getElementById('btn-pay-pix').disabled = !e.target.checked;
 });
 
+// Finalizar Pedido (Upload KML e Salvar no Banco)
 document.getElementById('btn-pay-pix').addEventListener('click', async () => {
     showLoading('Enviando...');
     try {
+        // 1. Sobe o KML pro Storage
         const filePath = `orders_files/${currentUserData.cpf}/${new Date().getTime()}_${selectedKmlFile.name}`;
         const snapshot = await uploadBytes(ref(storage, filePath), selectedKmlFile);
         const fileUrl = await getDownloadURL(snapshot.ref);
 
+        // 2. Cria o pedido no Firestore
         await addDoc(collection(db, "orders"), {
             ...currentOrderData,
             userCpf: currentUserData.cpf,
@@ -302,12 +312,18 @@ document.getElementById('btn-pay-pix').addEventListener('click', async () => {
             price: 49.90
         });
 
-        alert("Pedido Enviado!");
+        alert("Pedido Enviado com Sucesso!");
+        
+        // 3. Limpa o formulário e volta pro perfil
         document.getElementById('service-form').reset();
         selectedKmlFile = null;
         document.getElementById('kml-filename').textContent = "Anexar Arquivo *";
         showScreen('profile-screen');
-    } catch (e) { alert("Erro ao enviar pedido."); } finally { hideLoading(); }
+    } catch (e) { 
+        alert("Erro ao enviar pedido."); 
+    } finally { 
+        hideLoading(); 
+    }
 });
 
 // ==========================================
@@ -344,7 +360,7 @@ document.getElementById('btn-confirm-admin-login').addEventListener('click', asy
     } catch (e) { alert("Erro ao verificar senha."); } finally { hideLoading(); }
 });
 
-document.getElementById('btn-back-admin').addEventListener('click', () => showScreen('profile-screen'));
+document.getElementById('btn-back-admin').addEventListener('click', () => showScreen('login-screen')); // Volta pro Início
 
 // Configuração de Senhas
 document.getElementById('btn-admin-settings').addEventListener('click', async () => {
@@ -370,6 +386,7 @@ document.getElementById('btn-save-admin-settings').addEventListener('click', asy
     } catch (e) { alert("Erro ao salvar."); } finally { hideLoading(); }
 });
 
+// --- FIM DA PARTE 2.2.A ---
 // ==========================================
 // UPLOAD DO BANNER E LOGO GLOBAL (ADMIN)
 // ==========================================
