@@ -163,6 +163,16 @@
 
             <button id="btn-next-step" class="btn success full-width">Nova Solicitação de Serviço ➔</button>
 
+            <div class="card" style="margin-top: 20px;">
+                <h3 class="section-title">Meus Pedidos</h3>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px;">
+                    Acompanhe seus pedidos, veja o valor definido pelo administrador, copie a chave PIX e informe quando o pagamento for realizado.
+                </p>
+                <div id="user-orders-container">
+                    <p>Carregando pedidos...</p>
+                </div>
+            </div>
+
         </main>
 
     </div>
@@ -234,6 +244,11 @@
                     </select>
                 </div>
 
+                <div class="form-group hidden" id="gps-other-group">
+                    <label>Informe o modelo do monitor *</label>
+                    <input type="text" id="gps-other-model" class="form-control" placeholder="Ex: Raven, Agres, Hexagon, Fendt...">
+                </div>
+
                 <div class="form-group compass-group">
                     <label>Sentido Sugerido (Graus): <span id="compass-value">0°</span></label>
 
@@ -249,7 +264,7 @@
                     <textarea id="observations" class="form-control" rows="3"></textarea>
                 </div>
 
-                <button type="submit" class="btn success full-width">Avançar para Pagamento ➔</button>
+                <button type="submit" class="btn success full-width">Enviar Pedido para Orçamento ➔</button>
 
             </form>
 
@@ -261,7 +276,7 @@
 
         <header class="app-header">
             <button id="btn-back-request" class="btn-text">⬅ Voltar</button>
-            <h2>Finalizar Pedido</h2>
+            <h2>Confirmar Pedido</h2>
             <div style="width: 60px;"></div>
         </header>
 
@@ -275,7 +290,10 @@
 
                 <hr class="divider">
 
-                <h2 style="color: var(--primary-dark); text-align: center;">Total: R$ 49,90</h2>
+                <h3 style="color: var(--primary-dark); text-align: center;">Valor será definido pelo administrador</h3>
+                <p style="text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+                    Após o envio, acompanhe o pedido no seu perfil. Quando o administrador inserir o valor e a chave PIX, aparecerá a opção de pagamento.
+                </p>
 
             </div>
 
@@ -293,7 +311,7 @@
             </div>
 
             <div class="payment-methods">
-                <button id="btn-pay-pix" class="btn primary full-width" disabled>Gerar PIX e Concluir</button>
+                <button id="btn-pay-pix" class="btn primary full-width" disabled>Enviar Pedido</button>
             </div>
 
         </main>
@@ -332,23 +350,43 @@
 
             </div>
 
-            <h3 class="section-title">Pagamentos Aguardando Confirmação</h3>
-
+            <h3 class="section-title">Pedidos Aguardando Valor e PIX</h3>
             <p style="margin-bottom: 20px; color: var(--text-muted); font-size: 0.9rem;">
-                Confirme o pagamento para liberar o pedido na fila de produção.
+                Insira o valor do serviço e a chave PIX para liberar a cobrança no perfil do cliente.
             </p>
+            <div id="admin-pricing-container"></div>
 
+            <hr class="divider">
+
+            <h3 class="section-title">Pagamentos Aguardando Confirmação</h3>
+            <p style="margin-bottom: 20px; color: var(--text-muted); font-size: 0.9rem;">
+                Confirme o pagamento informado pelo cliente para liberar o pedido na fila de produção.
+            </p>
             <div id="admin-pending-payments-container"></div>
 
             <hr class="divider">
 
             <h3 class="section-title">Fila de Pedidos</h3>
-
             <p style="margin-bottom: 20px; color: var(--text-muted); font-size: 0.9rem;">
                 Somente pedidos com pagamento confirmado aparecem aqui.
             </p>
-
             <div id="admin-orders-container"></div>
+
+            <hr class="divider">
+
+            <h3 class="section-title">Pedidos Concluídos</h3>
+            <p style="margin-bottom: 20px; color: var(--text-muted); font-size: 0.9rem;">
+                Pedidos finalizados podem ser arquivados para limpar a lista principal.
+            </p>
+            <div id="admin-completed-container"></div>
+
+            <hr class="divider">
+
+            <h3 class="section-title">Pedidos Arquivados</h3>
+            <p style="margin-bottom: 20px; color: var(--text-muted); font-size: 0.9rem;">
+                Pedidos concluídos que foram arquivados.
+            </p>
+            <div id="admin-archived-container"></div>
 
         </main>
 
