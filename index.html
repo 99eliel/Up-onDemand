@@ -22,6 +22,9 @@
     <meta name="theme-color" content="#2E7D32">
 
     <link rel="stylesheet" href="style.css">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
 </head>
 
 <body>
@@ -210,6 +213,24 @@
                         <span id="kml-filename">Anexar Arquivo .KML ou .SHP (Zip) *</span>
                         <input type="file" id="kml-upload" accept=".kml,.zip" required>
                     </label>
+                </div>
+
+
+                <div class="form-group">
+                    <label>Marque 4 pontos de referência no mapa *</label>
+                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">
+                        Clique ou toque no mapa para marcar os 4 cantos/pontos principais da área. Isso ajuda o administrador a localizar melhor o talhão.
+                    </p>
+
+                    <div id="map-points-status" style="font-weight: bold; color: var(--primary-dark); margin-bottom: 10px;">
+                        0 de 4 pontos marcados
+                    </div>
+
+                    <div id="reference-map" style="height: 320px; width: 100%; border-radius: var(--border-radius); border: 1px solid #ddd; overflow: hidden; margin-bottom: 10px;"></div>
+
+                    <button type="button" id="btn-clear-map-points" class="btn secondary full-width">
+                        Limpar Pontos do Mapa
+                    </button>
                 </div>
 
                 <hr class="divider">
@@ -441,6 +462,9 @@
     <div id="loading-overlay" class="hidden" style="position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); z-index:999; display:flex; flex-direction:column; justify-content:center; align-items:center;">
         <h2 style="color: var(--primary-color);">Processando...</h2>
     </div>
+
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script type="module" src="app.js"></script>
 
