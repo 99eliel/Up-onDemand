@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>UpAgri On-Demand</title>
+    <title>UP AGRO On-Demand</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icon-192x192.png">
     <link rel="apple-touch-icon" href="icon-192x192.png">
@@ -17,7 +17,7 @@
 
     <!-- AVISO DE INSTALAÇÃO (PWA) -->
     <div id="install-banner" class="hidden" style="background-color: var(--primary-dark); color: white; padding: 12px; display: flex; justify-content: space-between; align-items: center; z-index: 50;">
-        <span style="font-size: 0.9rem; font-weight: bold;">Instale o app UpAgri</span>
+        <span style="font-size: 0.9rem; font-weight: bold;">Instale o app UP AGRO</span>
         <button id="btn-install-pwa" class="btn secondary" style="padding: 8px 15px; font-size: 0.85rem; background-color: white; color: var(--primary-dark); margin: 0;">Instalar</button>
     </div>
 
@@ -31,8 +31,9 @@
     <!-- TELA 1: LOGIN (CPF + DATA DE NASCIMENTO) -->
     <div id="login-screen" class="screen active">
         <div class="logo-container">
-            <img src="icon-192x192.png" alt="Logo UpAgri" style="width: 80px; margin-bottom: 10px; border-radius: 12px;">
-            <h1>UpAgri</h1>
+            <!-- ID adicionado para o JS trocar a imagem dinamicamente -->
+            <img id="main-app-logo" src="icon-192x192.png" alt="Logo UP AGRO" style="width: 80px; margin-bottom: 10px; border-radius: 12px;">
+            <h1>UP AGRO</h1>
             <p>Linhas de Piloto Automático On-Demand</p>
         </div>
         
@@ -55,7 +56,8 @@
     <!-- TELA 1.2: CADASTRO COMPLEMENTAR -->
     <div id="register-screen" class="screen">
         <div class="logo-container" style="margin-top: 20px; margin-bottom: 20px;">
-            <img src="icon-192x192.png" alt="Logo UpAgri" style="width: 60px; border-radius: 12px;">
+            <!-- ID adicionado para o JS trocar a imagem dinamicamente -->
+            <img id="main-app-logo-reg" src="icon-192x192.png" alt="Logo UP AGRO" style="width: 60px; border-radius: 12px;">
         </div>
         
         <div class="card" style="width: 100%; max-width: 400px; margin: 0 auto;">
@@ -86,7 +88,7 @@
         <main class="content">
             
             <!-- BANNER GLOBAL DO APP -->
-            <img id="app-global-banner" class="hidden" src="" alt="Banner UpAgri" style="width: 100%; max-height: 180px; object-fit: cover; border-radius: var(--border-radius); margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <img id="app-global-banner" class="hidden" src="" alt="Banner UP AGRO" style="width: 100%; max-height: 180px; object-fit: cover; border-radius: var(--border-radius); margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
 
             <div class="user-info">
                 <div class="avatar-placeholder" id="user-avatar-initials"></div>
@@ -229,11 +231,21 @@
         </header>
         <main class="content">
             
-            <!-- CONFIGURAÇÃO DO BANNER NO ADM -->
+            <!-- CONFIGURAÇÃO DO BANNER E LOGO NO ADM -->
             <div class="card" style="margin-bottom: 25px; border-left: 5px solid var(--secondary-color);">
                 <h3 class="section-title">Personalização</h3>
+                
                 <div class="form-group">
-                    <label>Alterar Banner Principal (PNG/JPG)</label>
+                    <label>Alterar Logo (Tela de Acesso)</label>
+                    <input type="file" id="admin-logo-upload" class="form-control" accept="image/png, image/jpeg">
+                    <img id="admin-logo-preview" class="hidden" src="" style="width: 80px; margin-top: 10px; border-radius: 8px;">
+                    <button id="btn-save-global-logo" class="btn secondary full-width mt-10">Salvar Nova Logo</button>
+                </div>
+
+                <hr class="divider">
+
+                <div class="form-group">
+                    <label>Alterar Banner Principal (Perfil)</label>
                     <input type="file" id="admin-banner-upload" class="form-control" accept="image/png, image/jpeg">
                     <img id="admin-banner-preview" class="hidden" src="" style="width: 100%; margin-top: 10px; border-radius: 8px;">
                     <button id="btn-save-global-banner" class="btn primary full-width mt-10">Salvar Novo Banner</button>
