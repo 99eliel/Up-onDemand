@@ -164,6 +164,7 @@ loadGlobalSettings();
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
+    document.getElementById('install-banner').style.display = 'flex';
     document.getElementById('install-banner').classList.remove('hidden');
 });
 
@@ -1265,72 +1266,79 @@ document.getElementById('btn-save-global-logo').addEventListener('click', async 
 
 function buildAdminOrderBaseHtml(order, orderId) {
     const status = order.status || "Aguardando valor";
-    const statusClass = getStatusClass(status, order.archived === true);
-    const statusText = getStatusText(status, order.archived === true);
 
     const dateStr = order.createdAt
         ? new Date(order.createdAt.toDate()).toLocaleDateString('pt-BR')
         : 'Recente';
 
+    const statusClass = getStatusClass(status, order.archived === true);
+    const statusText = getStatusText(status, order.archived === true);
+
     return `
         <div class="admin-order-card">
-            <div class="admin-order-top">
+            <div class="admin-order-card-header">
                 <div>
                     <h4 class="admin-order-title">${escapeHtml(order.fieldName || "Pedido sem talhão")}</h4>
                     <p class="admin-order-subtitle">${escapeHtml(order.farmName || "Fazenda não informada")} • ${dateStr}</p>
                 </div>
-                <span class="status-badge ${statusClass}">${escapeHtml(statusText)}</span>
+                <span class="admin-status-pill ${statusClass}">${escapeHtml(statusText)}</span>
             </div>
 
-            <div class="admin-client-strip">
-                <div class="admin-client-item">
-                    <span class="admin-client-label">Cliente</span>
-                    <span class="admin-client-value">${escapeHtml(order.userName || "Não informado")}</span>
+            <div class="admin-info-grid">
+                <div class="admin-info-box">
+                    <span class="admin-info-label">Cliente</span>
+                    <span class="admin-info-value">${escapeHtml(order.userName || "Não informado")}</span>
                 </div>
-                <div class="admin-client-item">
-                    <span class="admin-client-label">WhatsApp</span>
-                    <span class="admin-client-value">${escapeHtml(order.userWhatsapp || "Não informado")}</span>
+
+                <div class="admin-info-box">
+                    <span class="admin-info-label">WhatsApp</span>
+                    <span class="admin-info-value">${escapeHtml(order.userWhatsapp || "Não informado")}</span>
                 </div>
-                <div class="admin-client-item">
-                    <span class="admin-client-label">CPF</span>
-                    <span class="admin-client-value">${escapeHtml(order.userCpf || "Não informado")}</span>
+
+                <div class="admin-info-box">
+                    <span class="admin-info-label">CPF</span>
+                    <span class="admin-info-value">${escapeHtml(order.userCpf || "Não informado")}</span>
+                </div>
+
+                <div class="admin-info-box">
+                    <span class="admin-info-label">Valor</span>
+                    <span class="admin-info-value">${formatMoney(order.price)}</span>
+                </div>
+
+                <div class="admin-info-box">
+                    <span class="admin-info-label">Operação</span>
+                    <span class="admin-info-value">${escapeHtml(order.operationType || "Não informado")}</span>
+                </div>
+
+                <div class="admin-info-box">
+                    <span class="admin-info-label">Largura</span>
+                    <span class="admin-info-value">${escapeHtml(order.implementWidth || "0")}m</span>
+                </div>
+
+                <div class="admin-info-box">
+                    <span class="admin-info-label">Monitor GNSS</span>
+                    <span class="admin-info-value">${escapeHtml(order.gpsModel || "Não informado")}</span>
+                </div>
+
+                <div class="admin-info-box">
+                    <span class="admin-info-label">Chave PIX</span>
+                    <span class="admin-info-value">${escapeHtml(order.pixKey || "Não informada")}</span>
                 </div>
             </div>
 
-            <div class="admin-order-grid">
-                <div class="admin-order-metric">
-                    <small>Valor</small>
-                    <strong>${formatMoney(order.price)}</strong>
-                </div>
-                <div class="admin-order-metric">
-                    <small>Operação</small>
-                    <strong>${escapeHtml(order.operationType || "—")}</strong>
-                </div>
-                <div class="admin-order-metric">
-                    <small>Largura</small>
-                    <strong>${escapeHtml(order.implementWidth || "—")}m</strong>
-                </div>
-                <div class="admin-order-metric">
-                    <small>Monitor</small>
-                    <strong>${escapeHtml(order.gpsModel || "—")}</strong>
-                </div>
-            </div>
-
-            <div class="admin-links-row">
+            <div class="admin-download-row">
                 ${order.fileUrl ? `<a href="${order.fileUrl}" target="_blank" class="btn-secondary">Baixar KML/SHP</a>` : ''}
             </div>
 
-            <details class="admin-order-details">
+            <details class="admin-details">
                 <summary>Ver detalhes técnicos e pontos do mapa</summary>
                 <div style="margin-top: 10px;">
-                    <p><strong>Fazenda:</strong> ${escapeHtml(order.farmName || "Não informado")}</p>
-                    <p><strong>Talhão:</strong> ${escapeHtml(order.fieldName || "Não informado")}</p>
                     <p><strong>Sentido:</strong> ${escapeHtml(order.compassDegree || "0")}°</p>
                     <p><strong>Observações:</strong> ${escapeHtml(order.observations || "Nenhuma")}</p>
-                    <p><strong>Chave PIX:</strong> ${escapeHtml(order.pixKey || "Não informada")}</p>
                     ${buildMapPointsHtml(order.mapPoints)}
                 </div>
             </details>
+
             <input type="hidden" value="${escapeHtml(orderId)}">
     `;
 }
@@ -1365,11 +1373,11 @@ async function loadAdminOrders() {
         let hasArchived = false;
 
         if (querySnapshot.empty) {
-            pricingContainer.innerHTML = "<div class="empty-state">Nenhum pedido aguardando valor.</div>";
-            pendingContainer.innerHTML = "<div class="empty-state">Nenhum pagamento aguardando confirmação.</div>";
-            queueContainer.innerHTML = "<div class="empty-state">Nenhum pedido na fila.</div>";
-            completedContainer.innerHTML = "<div class="empty-state">Nenhum pedido concluído.</div>";
-            archivedContainer.innerHTML = "<div class="empty-state">Nenhum pedido arquivado.</div>";
+            pricingContainer.innerHTML = "<p>Nenhum pedido aguardando valor.</p>";
+            pendingContainer.innerHTML = "<p>Nenhum pagamento aguardando confirmação.</p>";
+            queueContainer.innerHTML = "<p>Nenhum pedido na fila.</p>";
+            completedContainer.innerHTML = "<p>Nenhum pedido concluído.</p>";
+            archivedContainer.innerHTML = "<p>Nenhum pedido arquivado.</p>";
             return;
         }
 
@@ -1398,13 +1406,10 @@ async function loadAdminOrders() {
 
                 archivedContainer.innerHTML += `
                     ${baseInfoHtml}
-                        <div class="admin-action-panel">
-                            <div class="admin-action-title">Pedido arquivado</div>
-                            ${order.finalFileUrl ? `<a href="${order.finalFileUrl}" target="_blank" class="btn-secondary">Baixar Arquivo Final</a>` : ''}
-                            <button class="btn secondary full-width btn-unarchive-order" data-id="${orderId}" style="margin-top: 10px;">
-                                Desarquivar Pedido
-                            </button>
-                        </div>
+                        ${order.finalFileUrl ? `<a href="${order.finalFileUrl}" target="_blank" class="btn-secondary">Baixar Arquivo Final</a>` : ''}
+                        <button class="btn secondary full-width btn-unarchive-order" data-id="${orderId}" style="margin-top: 10px;">
+                            Desarquivar Pedido
+                        </button>
                     </div>
                 `;
                 return;
@@ -1415,10 +1420,11 @@ async function loadAdminOrders() {
 
                 pricingContainer.innerHTML += `
                     ${baseInfoHtml}
-                        <div class="admin-action-panel warning">
-                            <div class="admin-action-title">Definir cobrança do pedido</div>
+                        <div class="admin-action-box">
+                            <p class="admin-action-title">Definir cobrança do pedido</p>
+
                             <div class="admin-payment-form">
-                                <div class="form-group">
+                                <div>
                                     <label>Valor do Pedido (R$)</label>
                                     <input 
                                         type="number" 
@@ -1431,21 +1437,21 @@ async function loadAdminOrders() {
                                     >
                                 </div>
 
-                                <div class="form-group">
+                                <div>
                                     <label>Chave PIX</label>
                                     <input 
                                         type="text" 
                                         class="form-control admin-pix-input" 
                                         id="admin-pix-${orderId}" 
-                                        placeholder="Digite CPF, CNPJ, e-mail, telefone ou chave aleatória"
+                                        placeholder="Digite a chave PIX"
                                         value="${escapeHtml(order.pixKey || "")}"
                                     >
                                 </div>
-                            </div>
 
-                            <button class="btn primary full-width btn-set-price-pix" data-id="${orderId}" style="margin-top: 12px;">
-                                Salvar Valor e Enviar Cobrança ao Cliente
-                            </button>
+                                <button class="btn primary full-width btn-set-price-pix full-row" data-id="${orderId}">
+                                    Salvar Valor e Enviar Cobrança ao Cliente
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1457,8 +1463,7 @@ async function loadAdminOrders() {
 
                 pendingContainer.innerHTML += `
                     ${baseInfoHtml}
-                        <div class="admin-action-panel info">
-                            <div class="admin-action-title">Confirmação de pagamento</div>
+                        <div style="margin-top: 15px;">
                             <p><strong>Situação:</strong> ${
                                 status === "Pagamento informado"
                                     ? "Cliente informou que já pagou."
@@ -1479,12 +1484,9 @@ async function loadAdminOrders() {
 
                 queueContainer.innerHTML += `
                     ${baseInfoHtml}
-                        <div class="admin-links-row">
-                            <a href="${zapLink}" target="_blank" class="btn-secondary">Avisar Cliente</a>
-                        </div>
+                        <a href="${zapLink}" target="_blank" class="btn-secondary">Avisar Cliente</a>
 
-                        <div class="admin-action-panel">
-                            <div class="admin-action-title">Entrega do arquivo final</div>
+                        <div style="margin-top: 15px;">
                             <label>Anexar Arquivo Final (ZIP/PDF/KML/KMZ):</label>
                             <input 
                                 type="file" 
@@ -1495,7 +1497,7 @@ async function loadAdminOrders() {
                             <button 
                                 class="btn primary full-width btn-complete-order" 
                                 data-id="${orderId}" 
-                                data-cpf="${escapeHtml(order.userCpf || "")}" style="margin-top: 10px;">
+                                data-cpf="${escapeHtml(order.userCpf || "")}">
                                 Concluir e Enviar para Cliente
                             </button>
                         </div>
@@ -1509,37 +1511,34 @@ async function loadAdminOrders() {
 
                 completedContainer.innerHTML += `
                     ${baseInfoHtml}
-                        <div class="admin-action-panel">
-                            <div class="admin-action-title">Pedido concluído</div>
-                            <p style="color: green; font-weight: bold;">✔ Arquivo final enviado ao cliente</p>
-                            ${order.finalFileUrl ? `<a href="${order.finalFileUrl}" target="_blank" class="btn-secondary">Baixar Arquivo Final</a>` : ''}
-                            <button class="btn secondary full-width btn-archive-order" data-id="${orderId}" style="margin-top: 10px;">
-                                Arquivar Pedido
-                            </button>
-                        </div>
+                        <p style="color: green; font-weight: bold;">✔ Pedido Concluído</p>
+                        ${order.finalFileUrl ? `<a href="${order.finalFileUrl}" target="_blank" class="btn-secondary">Baixar Arquivo Final</a>` : ''}
+                        <button class="btn secondary full-width btn-archive-order" data-id="${orderId}" style="margin-top: 10px;">
+                            Arquivar Pedido
+                        </button>
                     </div>
                 `;
             }
         });
 
         if (!hasPricing) {
-            pricingContainer.innerHTML = "<div class="empty-state">Nenhum pedido aguardando valor.</div>";
+            pricingContainer.innerHTML = "<p>Nenhum pedido aguardando valor.</p>";
         }
 
         if (!hasPending) {
-            pendingContainer.innerHTML = "<div class="empty-state">Nenhum pagamento aguardando confirmação.</div>";
+            pendingContainer.innerHTML = "<p>Nenhum pagamento aguardando confirmação.</p>";
         }
 
         if (!hasQueue) {
-            queueContainer.innerHTML = "<div class="empty-state">Nenhum pedido na fila.</div>";
+            queueContainer.innerHTML = "<p>Nenhum pedido na fila.</p>";
         }
 
         if (!hasCompleted) {
-            completedContainer.innerHTML = "<div class="empty-state">Nenhum pedido concluído.</div>";
+            completedContainer.innerHTML = "<p>Nenhum pedido concluído.</p>";
         }
 
         if (!hasArchived) {
-            archivedContainer.innerHTML = "<div class="empty-state">Nenhum pedido arquivado.</div>";
+            archivedContainer.innerHTML = "<p>Nenhum pedido arquivado.</p>";
         }
 
     } catch (error) {
