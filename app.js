@@ -789,14 +789,23 @@ function initReferenceMap() {
         attribution: '&copy; OpenStreetMap'
     });
 
+    const satelliteMap = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {
+            maxZoom: 19,
+            attribution: 'Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics and the GIS User Community'
+        }
+    );
+
     const reliefMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         maxZoom: 17,
         attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap'
     });
 
-    normalMap.addTo(referenceMap);
+    satelliteMap.addTo(referenceMap);
 
     L.control.layers({
+        "Satélite": satelliteMap,
         "Mapa normal": normalMap,
         "Relevo / Topográfico": reliefMap
     }).addTo(referenceMap);
