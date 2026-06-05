@@ -1,4 +1,4 @@
-const CACHE_NAME = 'upagro-cache-v1';
+const CACHE_NAME = 'upagro-cache-v2'; // Mude de v1 para v2
 const urlsToCache = [
   './',
   './index.html',
