@@ -1271,74 +1271,23 @@ function buildAdminOrderBaseHtml(order, orderId) {
         ? new Date(order.createdAt.toDate()).toLocaleDateString('pt-BR')
         : 'Recente';
 
-    const statusClass = getStatusClass(status, order.archived === true);
-    const statusText = getStatusText(status, order.archived === true);
-
     return `
-        <div class="admin-order-card">
-            <div class="admin-order-card-header">
-                <div>
-                    <h4 class="admin-order-title">${escapeHtml(order.fieldName || "Pedido sem talhão")}</h4>
-                    <p class="admin-order-subtitle">${escapeHtml(order.farmName || "Fazenda não informada")} • ${dateStr}</p>
-                </div>
-                <span class="admin-status-pill ${statusClass}">${escapeHtml(statusText)}</span>
-            </div>
-
-            <div class="admin-info-grid">
-                <div class="admin-info-box">
-                    <span class="admin-info-label">Cliente</span>
-                    <span class="admin-info-value">${escapeHtml(order.userName || "Não informado")}</span>
-                </div>
-
-                <div class="admin-info-box">
-                    <span class="admin-info-label">WhatsApp</span>
-                    <span class="admin-info-value">${escapeHtml(order.userWhatsapp || "Não informado")}</span>
-                </div>
-
-                <div class="admin-info-box">
-                    <span class="admin-info-label">CPF</span>
-                    <span class="admin-info-value">${escapeHtml(order.userCpf || "Não informado")}</span>
-                </div>
-
-                <div class="admin-info-box">
-                    <span class="admin-info-label">Valor</span>
-                    <span class="admin-info-value">${formatMoney(order.price)}</span>
-                </div>
-
-                <div class="admin-info-box">
-                    <span class="admin-info-label">Operação</span>
-                    <span class="admin-info-value">${escapeHtml(order.operationType || "Não informado")}</span>
-                </div>
-
-                <div class="admin-info-box">
-                    <span class="admin-info-label">Largura</span>
-                    <span class="admin-info-value">${escapeHtml(order.implementWidth || "0")}m</span>
-                </div>
-
-                <div class="admin-info-box">
-                    <span class="admin-info-label">Monitor GNSS</span>
-                    <span class="admin-info-value">${escapeHtml(order.gpsModel || "Não informado")}</span>
-                </div>
-
-                <div class="admin-info-box">
-                    <span class="admin-info-label">Chave PIX</span>
-                    <span class="admin-info-value">${escapeHtml(order.pixKey || "Não informada")}</span>
-                </div>
-            </div>
-
-            <div class="admin-download-row">
-                ${order.fileUrl ? `<a href="${order.fileUrl}" target="_blank" class="btn-secondary">Baixar KML/SHP</a>` : ''}
-            </div>
-
-            <details class="admin-details">
-                <summary>Ver detalhes técnicos e pontos do mapa</summary>
-                <div style="margin-top: 10px;">
-                    <p><strong>Sentido:</strong> ${escapeHtml(order.compassDegree || "0")}°</p>
-                    <p><strong>Observações:</strong> ${escapeHtml(order.observations || "Nenhuma")}</p>
-                    ${buildMapPointsHtml(order.mapPoints)}
-                </div>
-            </details>
-
+        <div class="order-card">
+            <p><strong>Data:</strong> ${dateStr}</p>
+            <p><strong>Status:</strong> ${escapeHtml(status)}</p>
+            <p><strong>Cliente:</strong> ${escapeHtml(order.userName || "Não informado")}</p>
+            <p><strong>WhatsApp:</strong> ${escapeHtml(order.userWhatsapp || "Não informado")}</p>
+            <p><strong>CPF:</strong> ${escapeHtml(order.userCpf || "Não informado")}</p>
+            <p><strong>Fazenda:</strong> ${escapeHtml(order.farmName || "Não informado")}</p>
+            <p><strong>Talhão:</strong> ${escapeHtml(order.fieldName || "Não informado")}</p>
+            <p><strong>Operação:</strong> ${escapeHtml(order.operationType || "Não informado")} (${escapeHtml(order.implementWidth || "0")}m)</p>
+            <p><strong>Monitor GNSS:</strong> ${escapeHtml(order.gpsModel || "Não informado")}</p>
+            <p><strong>Sentido:</strong> ${escapeHtml(order.compassDegree || "0")}°</p>
+            <p><strong>Observações:</strong> ${escapeHtml(order.observations || "Nenhuma")}</p>
+            ${buildMapPointsHtml(order.mapPoints)}
+            <p><strong>Valor:</strong> ${formatMoney(order.price)}</p>
+            <p><strong>Chave PIX:</strong> ${escapeHtml(order.pixKey || "Não informada")}</p>
+            ${order.fileUrl ? `<a href="${order.fileUrl}" target="_blank" class="btn-secondary">Baixar KML/SHP</a>` : ''}
             <input type="hidden" value="${escapeHtml(orderId)}">
     `;
 }
@@ -1420,38 +1369,30 @@ async function loadAdminOrders() {
 
                 pricingContainer.innerHTML += `
                     ${baseInfoHtml}
-                        <div class="admin-action-box">
-                            <p class="admin-action-title">Definir cobrança do pedido</p>
+                        <div style="margin-top: 15px;">
+                            <label>Valor do Pedido (R$)</label>
+                            <input 
+                                type="number" 
+                                step="0.01" 
+                                min="0" 
+                                class="form-control admin-price-input" 
+                                id="admin-price-${orderId}" 
+                                placeholder="Ex: 49.90"
+                                value="${order.price ? Number(order.price).toFixed(2) : ""}"
+                            >
 
-                            <div class="admin-payment-form">
-                                <div>
-                                    <label>Valor do Pedido (R$)</label>
-                                    <input 
-                                        type="number" 
-                                        step="0.01" 
-                                        min="0" 
-                                        class="form-control admin-price-input" 
-                                        id="admin-price-${orderId}" 
-                                        placeholder="Ex: 49.90"
-                                        value="${order.price ? Number(order.price).toFixed(2) : ""}"
-                                    >
-                                </div>
+                            <label style="margin-top: 10px;">Chave PIX</label>
+                            <input 
+                                type="text" 
+                                class="form-control admin-pix-input" 
+                                id="admin-pix-${orderId}" 
+                                placeholder="Digite a chave PIX"
+                                value="${escapeHtml(order.pixKey || "")}"
+                            >
 
-                                <div>
-                                    <label>Chave PIX</label>
-                                    <input 
-                                        type="text" 
-                                        class="form-control admin-pix-input" 
-                                        id="admin-pix-${orderId}" 
-                                        placeholder="Digite a chave PIX"
-                                        value="${escapeHtml(order.pixKey || "")}"
-                                    >
-                                </div>
-
-                                <button class="btn primary full-width btn-set-price-pix full-row" data-id="${orderId}">
-                                    Salvar Valor e Enviar Cobrança ao Cliente
-                                </button>
-                            </div>
+                            <button class="btn primary full-width btn-set-price-pix" data-id="${orderId}" style="margin-top: 10px;">
+                                Salvar Valor e Enviar Cobrança ao Cliente
+                            </button>
                         </div>
                     </div>
                 `;
@@ -1714,8 +1655,10 @@ document.getElementById('admin-archived-container').addEventListener('click', as
 // ==========================================
 
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').then((reg) => {
+    navigator.serviceWorker.register('./sw.js').then((reg) => {
         reg.update();
+    }).catch((error) => {
+        console.warn('Service Worker não registrado:', error);
     });
 
     let refreshing;

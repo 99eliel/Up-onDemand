@@ -196,140 +196,6 @@
         }
     </style>
 
-
-    <style>
-        .admin-order-card {
-            background: #ffffff;
-            border: 1px solid #E0E0E0;
-            border-left: 5px solid var(--primary-color);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 18px;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.07);
-        }
-
-        .admin-order-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 12px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #EEEEEE;
-            margin-bottom: 12px;
-        }
-
-        .admin-order-title {
-            margin: 0;
-            font-size: 1.1rem;
-            color: var(--primary-dark);
-            font-weight: 800;
-        }
-
-        .admin-order-subtitle {
-            margin: 4px 0 0;
-            color: var(--text-muted);
-            font-size: 0.88rem;
-        }
-
-        .admin-status-pill {
-            background: #E8F5E9;
-            color: #1B5E20;
-            border-radius: 999px;
-            padding: 7px 10px;
-            font-size: 0.78rem;
-            font-weight: 800;
-            white-space: nowrap;
-        }
-
-        .admin-info-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px;
-            margin: 12px 0;
-        }
-
-        .admin-info-box {
-            background: #F7F9F7;
-            border-radius: 12px;
-            padding: 10px;
-        }
-
-        .admin-info-label {
-            display: block;
-            color: var(--text-muted);
-            font-size: 0.74rem;
-            margin-bottom: 4px;
-        }
-
-        .admin-info-value {
-            display: block;
-            color: #263238;
-            font-weight: 800;
-            word-break: break-word;
-        }
-
-        .admin-action-box {
-            background: #F1F8E9;
-            border: 1px solid #C8E6C9;
-            border-radius: 14px;
-            padding: 14px;
-            margin-top: 14px;
-        }
-
-        .admin-action-title {
-            margin: 0 0 10px;
-            color: var(--primary-dark);
-            font-weight: 800;
-        }
-
-        .admin-payment-form {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            align-items: end;
-        }
-
-        .admin-payment-form .full-row {
-            grid-column: 1 / -1;
-        }
-
-        .admin-details {
-            margin-top: 12px;
-            border-top: 1px solid #EEEEEE;
-            padding-top: 10px;
-        }
-
-        .admin-details summary {
-            cursor: pointer;
-            color: var(--primary-dark);
-            font-weight: 800;
-            user-select: none;
-        }
-
-        .admin-download-row {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
-        @media (max-width: 640px) {
-            .admin-order-card-header,
-            .admin-payment-form {
-                grid-template-columns: 1fr;
-                flex-direction: column;
-            }
-
-            .admin-info-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .admin-status-pill {
-                white-space: normal;
-            }
-        }
-    </style>
-
 </head>
 
 <body>
@@ -779,7 +645,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script type="module" src="app.js"></script>
+    <script type="module" src="app.js?v=restore-20260605"></script>
 
 </body>
 
