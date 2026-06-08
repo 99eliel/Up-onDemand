@@ -21,7 +21,7 @@
 
     <meta name="theme-color" content="#2E7D32">
 
-    <link rel="stylesheet" href="style.css?v=profile-pro-20260605">
+    <link rel="stylesheet" href="style.css?v=angulo-sentido-20260605">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
@@ -1082,6 +1082,26 @@
     }
 </style>
 
+
+<style id="force-angle-controls">
+    .compass-letter { display:none !important; }
+    .angle-control-box {
+        background: linear-gradient(180deg, #FFFDF7, #F5EBD4) !important;
+        border: 1px solid rgba(212,175,55,.35) !important;
+        border-radius: 16px !important;
+        padding: 13px !important;
+        margin-top: 10px !important;
+    }
+    .angle-control-grid {
+        display:grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 12px !important;
+    }
+    @media (max-width:640px) {
+        .angle-control-grid { grid-template-columns:1fr !important; }
+    }
+</style>
+
 </head>
 
 <body>
@@ -1401,10 +1421,6 @@
 
                         <div id="compass-overlay" class="compass-overlay hidden" title="Arraste para girar a rosa dos ventos">
                             <div class="compass-arrow-visual"></div>
-                            <span class="compass-letter compass-n">N</span>
-                            <span class="compass-letter compass-s">S</span>
-                            <span class="compass-letter compass-e">L</span>
-                            <span class="compass-letter compass-w">O</span>
                             <div class="compass-center"></div>
                         </div>
 
@@ -1445,6 +1461,37 @@
                                 <span>Anexe um PDF, imagem ou arquivo complementar indicando a orientação desejada.</span>
                             </div>
                         </label>
+                    </div>
+
+
+                    <div id="angle-control-group" class="angle-control-box hidden">
+                        <label>Defina o sentido das linhas</label>
+
+                        <div class="angle-control-grid">
+                            <div>
+                                <label for="manual-angle-input">Digitar ângulo (0° a 359°)</label>
+                                <input type="number" id="manual-angle-input" class="form-control" min="0" max="359" step="1" value="0">
+                            </div>
+
+                            <div>
+                                <label for="preset-direction-select">Ou escolher sentido</label>
+                                <select id="preset-direction-select" class="form-control">
+                                    <option value="">Selecione...</option>
+                                    <option value="0">Norte → Sul (0°)</option>
+                                    <option value="45">Nordeste → Sudoeste (45°)</option>
+                                    <option value="90">Leste → Oeste (90°)</option>
+                                    <option value="135">Sudeste → Noroeste (135°)</option>
+                                    <option value="180">Sul → Norte (180°)</option>
+                                    <option value="225">Sudoeste → Nordeste (225°)</option>
+                                    <option value="270">Oeste → Leste (270°)</option>
+                                    <option value="315">Noroeste → Sudeste (315°)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <p class="angle-control-hint">
+                            Você pode girar a seta no mapa, digitar o ângulo ou escolher um sentido pronto.
+                        </p>
                     </div>
 
                     <div id="orientation-file-group" class="orientation-sketch-box hidden">
@@ -1694,7 +1741,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script type="module" src="app.js?v=profile-pro-20260605"></script>
+    <script type="module" src="app.js?v=angulo-sentido-20260605"></script>
 
 </body>
 

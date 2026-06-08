@@ -670,3 +670,60 @@ details summary {
         font-size: 0.78rem !important;
     }
 }
+
+
+
+/* ===== Ajuste da rosa dos ventos e controle de ângulo ===== */
+
+.compass-letter {
+    display: none !important;
+}
+
+.compass-overlay {
+    border-radius: 50% !important;
+}
+
+.compass-overlay::before {
+    content: "";
+    position: absolute;
+    inset: 12px;
+    border: 1px dashed rgba(245,215,110,0.45);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.compass-arrow-visual {
+    top: 9px !important;
+    border-left-width: 11px !important;
+    border-right-width: 11px !important;
+    border-bottom-width: 54px !important;
+}
+
+.angle-control-box {
+    background: linear-gradient(180deg, #FFFDF7, #F5EBD4) !important;
+    border: 1px solid rgba(212,175,55,0.35) !important;
+    color: #202020 !important;
+    border-radius: 16px !important;
+    padding: 13px !important;
+    margin-top: 10px !important;
+}
+
+.angle-control-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.angle-control-hint {
+    margin: 10px 0 0;
+    color: #6D5B25;
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+@media (max-width: 640px) {
+    .angle-control-grid {
+        grid-template-columns: 1fr;
+    }
+}

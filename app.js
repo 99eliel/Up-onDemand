@@ -1005,6 +1005,30 @@ function updateCompassVisual() {
     }
 }
 
+
+function setCompassDegree(value) {
+    let parsed = Number(value);
+
+    if (Number.isNaN(parsed)) {
+        parsed = 0;
+    }
+
+    parsed = Math.round(parsed) % 360;
+
+    if (parsed < 0) {
+        parsed += 360;
+    }
+
+    compassDegree = parsed;
+
+    const manualInput = document.getElementById('manual-angle-input');
+    if (manualInput) {
+        manualInput.value = String(compassDegree);
+    }
+
+    updateCompassVisual();
+}
+
 function updateCompassFromPointer(clientX, clientY) {
     const compass = document.getElementById('compass-overlay');
 
@@ -1019,8 +1043,7 @@ function updateCompassFromPointer(clientX, clientY) {
 
     if (degrees < 0) degrees += 360;
 
-    compassDegree = Math.round(degrees);
-    updateCompassVisual();
+    setCompassDegree(degrees);
 }
 
 const compassEl = document.getElementById('compass-overlay');
@@ -1078,12 +1101,16 @@ function updateDirectionUI() {
     const orientationGroup = document.getElementById('orientation-file-group');
     const orientationFileInput = document.getElementById('orientation-file-upload');
 
+    const angleControlGroup = document.getElementById('angle-control-group');
+
     if (mode === "user_defined") {
         compass.classList.remove('hidden');
         angleBox.classList.remove('hidden');
+        if (angleControlGroup) angleControlGroup.classList.remove('hidden');
     } else {
         compass.classList.add('hidden');
         angleBox.classList.add('hidden');
+        if (angleControlGroup) angleControlGroup.classList.add('hidden');
     }
 
     if (mode === "orientation_file") {
@@ -1160,6 +1187,9 @@ document.getElementById('btn-next-step').addEventListener('click', () => {
     selectedKmlFile = null;
     selectedOrientationFile = null;
     compassDegree = 0;
+    setCompassDegree(0);
+    const presetDirectionSelect = document.getElementById('preset-direction-select');
+    if (presetDirectionSelect) presetDirectionSelect.value = "";
     updateCompassVisual();
     document.getElementById('system-model').innerHTML = `<option value="">Selecione primeiro a marca/sistema...</option>`;
     document.getElementById('kml-filename').textContent = "Anexar Arquivo KML/KMZ/SHP em ZIP *";
