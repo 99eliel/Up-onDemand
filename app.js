@@ -50,6 +50,7 @@ let currentUserData = null;
 let currentUserIsAdmin = false;
 let selectedLogoFile = null;
 let selectedKmlFile = null;
+let selectedOrientationFile = null;
 let currentOrderData = {};
 let deferredPrompt;
 
@@ -409,6 +410,10 @@ function setupProfileScreen() {
     document.getElementById('user-email').textContent = currentUserData.email || "";
     document.getElementById('user-cpf').textContent = currentUserData.cpf ? maskCPF(currentUserData.cpf) : "";
     document.getElementById('user-avatar-initials').textContent = (currentUserData.name || "U").charAt(0).toUpperCase();
+    const welcomeName = document.getElementById('client-welcome-name');
+    if (welcomeName) {
+        welcomeName.textContent = (currentUserData.name || "cliente").split(" ")[0];
+    }
 
     const adminButton = document.getElementById('btn-admin-panel');
 
@@ -419,9 +424,9 @@ function setupProfileScreen() {
     }
 
     const aerofotoLink = document.getElementById('btn-aerofoto-email');
-    const subject = encodeURIComponent("Orçamento para aerofoto e levantamento");
+    const subject = encodeURIComponent("Solicitar aerofotolevantamento de área");
     const body = encodeURIComponent(
-        `Olá, equipe UP AGRO.\n\nGostaria de solicitar orçamento para aerofoto/levantamento.\n\nNome: ${currentUserData.name || ""}\nWhatsApp: ${currentUserData.whatsapp || ""}\nCPF: ${currentUserData.cpf || ""}\n\nDescrição da demanda:\n`
+        `Olá, equipe UP AGRO.\n\nGostaria de solicitar aerofotolevantamento de minha área.\n\nNome: ${currentUserData.name || ""}\nWhatsApp: ${currentUserData.whatsapp || ""}\nCPF: ${currentUserData.cpf || ""}\n\nDescrição da área/demanda:\n`
     );
     aerofotoLink.href = `mailto:atendimento@upagritechnology.com.br?subject=${subject}&body=${body}`;
 
@@ -631,7 +636,9 @@ async function loadUserOrders() {
                             <p><strong>Fazenda:</strong> ${escapeHtml(order.farmName)}</p>
                             <p><strong>Talhão:</strong> ${escapeHtml(order.fieldName)}</p>
                             <p><strong>Sistema:</strong> ${escapeHtml(order.systemBrand || "")} ${escapeHtml(order.systemModel || "")}</p>
-                            <p><strong>Ângulo:</strong> ${escapeHtml(order.compassDegree || "0")}°</p>
+                            <p><strong>Direcionamento:</strong> ${escapeHtml(order.directionLabel || "Definido pela UP Agritechnology")}</p>
+                            ${order.directionMode === "user_defined" ? `<p><strong>Ângulo:</strong> ${escapeHtml(order.compassDegree || "0")}°</p>` : ""}
+                            ${order.orientationFileUrl ? `<p><strong>Arquivo/croqui de orientação:</strong> <a href="${order.orientationFileUrl}" target="_blank">Abrir arquivo</a></p>` : ""}
                             <p><strong>Demanda de modificação:</strong> ${order.modificationRequested ? "Sim" : "Não"}</p>
                             ${order.modificationRequested ? `<p><strong>Descrição:</strong> ${escapeHtml(order.modificationDescription || "")}</p>` : ""}
                             <p><strong>Observações:</strong> ${escapeHtml(order.observations || "Nenhuma")}</p>
@@ -956,7 +963,7 @@ function updateCompassVisual() {
     const value = document.getElementById('compass-value');
 
     if (compass) {
-        compass.style.transform = `translate(-50%, -50%) rotate(${compassDegree}deg)`;
+        compass.style.transform = `rotate(${compassDegree}deg)`;
     }
 
     if (value) {
@@ -1010,6 +1017,98 @@ compassEl.addEventListener('pointercancel', () => {
     isDraggingCompass = false;
 });
 
+
+function getSelectedDirectionMode() {
+    const selected = document.querySelector('input[name="line-direction-mode"]:checked');
+    return selected ? selected.value : "up_defined";
+}
+
+function getSelectedDirectionLabel() {
+    const mode = getSelectedDirectionMode();
+
+    if (mode === "user_defined") {
+        return "Informarei o sentido desejado";
+    }
+
+    if (mode === "orientation_file") {
+        return "Enviar arquivo ou croqui com orientação específica";
+    }
+
+    return "Definido pela UP Agritechnology (recomendado)";
+}
+
+function updateDirectionUI() {
+    const mode = getSelectedDirectionMode();
+    const compass = document.getElementById('compass-overlay');
+    const angleBox = document.getElementById('compass-angle-box');
+    const orientationGroup = document.getElementById('orientation-file-group');
+    const orientationFileInput = document.getElementById('orientation-file-upload');
+
+    if (mode === "user_defined") {
+        compass.classList.remove('hidden');
+        angleBox.classList.remove('hidden');
+    } else {
+        compass.classList.add('hidden');
+        angleBox.classList.add('hidden');
+    }
+
+    if (mode === "orientation_file") {
+        orientationGroup.classList.remove('hidden');
+        orientationFileInput.required = true;
+    } else {
+        orientationGroup.classList.add('hidden');
+        orientationFileInput.required = false;
+        orientationFileInput.value = "";
+        selectedOrientationFile = null;
+        const filename = document.getElementById('orientation-filename');
+        if (filename) filename.textContent = "Nenhum arquivo selecionado";
+    }
+}
+
+function setElementDisabledBySelector(selector, disabled) {
+    document.querySelectorAll(selector).forEach((el) => {
+        el.disabled = disabled;
+        if (disabled) {
+            el.setAttribute('data-was-disabled-by-modification', 'true');
+        } else if (el.getAttribute('data-was-disabled-by-modification') === 'true') {
+            el.removeAttribute('data-was-disabled-by-modification');
+        }
+    });
+}
+
+function updateModificationOnlyMode() {
+    const isModificationOnly = document.getElementById('modification-requested').checked;
+    const alertBox = document.getElementById('modification-only-alert');
+    const descriptionGroup = document.getElementById('modification-description-group');
+    const description = document.getElementById('modification-description');
+
+    const mapSection = document.getElementById('map-reference-section');
+    const directionSection = document.getElementById('direction-section');
+
+    if (isModificationOnly) {
+        alertBox.classList.remove('hidden');
+        descriptionGroup.classList.remove('hidden');
+        description.required = true;
+
+        mapSection.classList.add('disabled-section');
+        directionSection.classList.add('disabled-section');
+
+        setElementDisabledBySelector('#operation-type, #implement-width, #system-brand, #system-model, #system-other-name, #orientation-file-upload', true);
+        document.querySelectorAll('input[name="line-direction-mode"]').forEach(radio => radio.disabled = true);
+    } else {
+        alertBox.classList.add('hidden');
+        descriptionGroup.classList.add('hidden');
+        description.required = false;
+
+        mapSection.classList.remove('disabled-section');
+        directionSection.classList.remove('disabled-section');
+
+        setElementDisabledBySelector('#operation-type, #implement-width, #system-brand, #system-model, #system-other-name, #orientation-file-upload', false);
+        document.querySelectorAll('input[name="line-direction-mode"]').forEach(radio => radio.disabled = false);
+        updateDirectionUI();
+    }
+}
+
 // ==========================================
 // SOLICITAÇÃO E CHECKOUT
 // ==========================================
@@ -1019,12 +1118,19 @@ document.getElementById('btn-next-step').addEventListener('click', () => {
     document.getElementById('system-other-group').classList.add('hidden');
     document.getElementById('system-other-name').required = false;
     document.getElementById('modification-description-group').classList.add('hidden');
+    document.getElementById('modification-only-alert').classList.add('hidden');
     document.getElementById('modification-description').required = false;
+    document.querySelector('input[name="line-direction-mode"][value="up_defined"]').checked = true;
+    updateDirectionUI();
+    updateModificationOnlyMode();
     selectedKmlFile = null;
+    selectedOrientationFile = null;
     compassDegree = 0;
     updateCompassVisual();
     document.getElementById('system-model').innerHTML = `<option value="">Selecione primeiro a marca/sistema...</option>`;
     document.getElementById('kml-filename').textContent = "Anexar Arquivo KML/KMZ/SHP em ZIP *";
+    const orientationName = document.getElementById('orientation-filename');
+    if (orientationName) orientationName.textContent = "Nenhum arquivo selecionado";
     clearMapPoints();
     showScreen('request-screen');
 });
@@ -1087,18 +1193,25 @@ document.getElementById('system-brand').addEventListener('change', (e) => {
     }
 });
 
-document.getElementById('modification-requested').addEventListener('change', (e) => {
-    const group = document.getElementById('modification-description-group');
-    const textarea = document.getElementById('modification-description');
+document.querySelectorAll('input[name="line-direction-mode"]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+        updateDirectionUI();
+    });
+});
 
-    if (e.target.checked) {
-        group.classList.remove('hidden');
-        textarea.required = true;
-    } else {
-        group.classList.add('hidden');
-        textarea.required = false;
-        textarea.value = "";
+document.getElementById('orientation-file-upload').addEventListener('change', (e) => {
+    selectedOrientationFile = e.target.files[0] || null;
+    document.getElementById('orientation-filename').textContent = selectedOrientationFile
+        ? `✔ ${selectedOrientationFile.name}`
+        : "Nenhum arquivo selecionado";
+});
+
+document.getElementById('modification-requested').addEventListener('change', () => {
+    if (!document.getElementById('modification-requested').checked) {
+        document.getElementById('modification-description').value = "";
     }
+
+    updateModificationOnlyMode();
 });
 
 document.getElementById('service-form').addEventListener('submit', (e) => {
@@ -1108,64 +1221,88 @@ document.getElementById('service-form').addEventListener('submit', (e) => {
         return alert("Anexe o arquivo KML/KMZ/SHP em ZIP.");
     }
 
-    if (selectedMapPoints.length < 1) {
-        return alert("Marque pelo menos 1 ponto de referência no mapa.");
-    }
-
-    if (selectedMapPoints.length > MAX_MAP_POINTS) {
-        return alert(`Marque no máximo ${MAX_MAP_POINTS} pontos.`);
-    }
-
-    const systemBrand = document.getElementById('system-brand').value;
-    let systemModel = document.getElementById('system-model').value;
-
-    if (systemBrand === "Outro sistema") {
-        const otherName = document.getElementById('system-other-name').value.trim();
-
-        if (!otherName) {
-            return alert("Informe o nome do sistema.");
-        }
-
-        systemModel = otherName;
-    }
-
     const modificationRequested = document.getElementById('modification-requested').checked;
     const modificationDescription = document.getElementById('modification-description').value.trim();
 
     if (modificationRequested && !modificationDescription) {
-        return alert("Descreva a demanda de modificação do arquivo.");
+        return alert("Explique o que deseja modificar no arquivo.");
     }
 
-    const gpsModel = systemBrand === "Outro sistema"
-        ? `Outro sistema - ${systemModel}`
-        : `${systemBrand} - ${systemModel}`;
+    const directionMode = getSelectedDirectionMode();
+    const directionLabel = getSelectedDirectionLabel();
+
+    let systemBrand = "";
+    let systemModel = "";
+    let gpsModel = "Demanda de modificação de arquivo";
+
+    if (!modificationRequested) {
+        if (selectedMapPoints.length < 1) {
+            return alert("Marque pelo menos 1 ponto de referência no mapa.");
+        }
+
+        if (selectedMapPoints.length > MAX_MAP_POINTS) {
+            return alert(`Marque no máximo ${MAX_MAP_POINTS} pontos.`);
+        }
+
+        if (directionMode === "orientation_file" && !selectedOrientationFile) {
+            return alert("Anexe o arquivo ou croqui com a orientação específica.");
+        }
+
+        systemBrand = document.getElementById('system-brand').value;
+        systemModel = document.getElementById('system-model').value;
+
+        if (systemBrand === "Outro sistema") {
+            const otherName = document.getElementById('system-other-name').value.trim();
+
+            if (!otherName) {
+                return alert("Informe o nome do sistema.");
+            }
+
+            systemModel = otherName;
+        }
+
+        gpsModel = systemBrand === "Outro sistema"
+            ? `Outro sistema - ${systemModel}`
+            : `${systemBrand} - ${systemModel}`;
+    }
 
     currentOrderData = {
         farmName: document.getElementById('farm-name').value.trim(),
         fieldName: document.getElementById('field-name').value.trim(),
-        operationType: document.getElementById('operation-type').value,
-        implementWidth: document.getElementById('implement-width').value,
+        operationType: modificationRequested ? "Modificação de arquivo" : document.getElementById('operation-type').value,
+        implementWidth: modificationRequested ? "" : document.getElementById('implement-width').value,
         systemBrand: systemBrand,
         systemModel: systemModel,
         gpsModel: gpsModel,
-        compassDegree: compassDegree,
+        directionMode: modificationRequested ? "modification_only" : directionMode,
+        directionLabel: modificationRequested ? "Demanda de modificação de arquivo" : directionLabel,
+        compassDegree: (!modificationRequested && directionMode === "user_defined") ? compassDegree : null,
         observations: document.getElementById('observations').value.trim(),
         modificationRequested: modificationRequested,
         modificationDescription: modificationDescription,
-        mapPoints: selectedMapPoints,
+        mapPoints: modificationRequested ? [] : selectedMapPoints,
         fileName: selectedKmlFile.name
     };
 
-    document.getElementById('order-summary-list').innerHTML = `
-        <li><strong>Fazenda:</strong> ${escapeHtml(currentOrderData.farmName)}</li>
-        <li><strong>Talhão:</strong> ${escapeHtml(currentOrderData.fieldName)}</li>
-        <li><strong>Operação:</strong> ${escapeHtml(currentOrderData.operationType)}</li>
-        <li><strong>Largura:</strong> ${escapeHtml(currentOrderData.implementWidth)}m</li>
-        <li><strong>Sistema:</strong> ${escapeHtml(currentOrderData.gpsModel)}</li>
-        <li><strong>Ângulo:</strong> ${escapeHtml(currentOrderData.compassDegree)}°</li>
-        <li><strong>Pontos no mapa:</strong> ${selectedMapPoints.length} ponto(s)</li>
-        <li><strong>Modificação de arquivo:</strong> ${modificationRequested ? "Sim" : "Não"}</li>
-    `;
+    document.getElementById('order-summary-list').innerHTML = modificationRequested
+        ? `
+            <li><strong>Fazenda:</strong> ${escapeHtml(currentOrderData.farmName)}</li>
+            <li><strong>Talhão:</strong> ${escapeHtml(currentOrderData.fieldName)}</li>
+            <li><strong>Tipo:</strong> Demanda de modificação de arquivo</li>
+            <li><strong>Arquivo:</strong> ${escapeHtml(currentOrderData.fileName)}</li>
+            <li><strong>Descrição:</strong> ${escapeHtml(currentOrderData.modificationDescription)}</li>
+        `
+        : `
+            <li><strong>Fazenda:</strong> ${escapeHtml(currentOrderData.farmName)}</li>
+            <li><strong>Talhão:</strong> ${escapeHtml(currentOrderData.fieldName)}</li>
+            <li><strong>Operação:</strong> ${escapeHtml(currentOrderData.operationType)}</li>
+            <li><strong>Largura:</strong> ${escapeHtml(currentOrderData.implementWidth)}m</li>
+            <li><strong>Sistema:</strong> ${escapeHtml(currentOrderData.gpsModel)}</li>
+            <li><strong>Direcionamento:</strong> ${escapeHtml(currentOrderData.directionLabel)}</li>
+            ${currentOrderData.directionMode === "user_defined" ? `<li><strong>Ângulo:</strong> ${escapeHtml(currentOrderData.compassDegree)}°</li>` : ""}
+            <li><strong>Pontos no mapa:</strong> ${selectedMapPoints.length} ponto(s)</li>
+            <li><strong>Modificação de arquivo:</strong> Não</li>
+        `;
 
     document.getElementById('terms-checkbox').checked = false;
     document.getElementById('btn-pay-pix').disabled = true;
@@ -1189,6 +1326,16 @@ document.getElementById('btn-pay-pix').addEventListener('click', async () => {
         const snapshot = await uploadBytes(ref(storage, filePath), selectedKmlFile);
         const fileUrl = await getDownloadURL(snapshot.ref);
 
+        let orientationFileUrl = "";
+        let orientationFileName = "";
+
+        if (selectedOrientationFile && currentOrderData.directionMode === "orientation_file") {
+            const orientationPath = `orientation_files/${currentUser.uid}/${Date.now()}_${selectedOrientationFile.name}`;
+            const orientationSnapshot = await uploadBytes(ref(storage, orientationPath), selectedOrientationFile);
+            orientationFileUrl = await getDownloadURL(orientationSnapshot.ref);
+            orientationFileName = selectedOrientationFile.name;
+        }
+
         await addDoc(collection(db, "orders"), {
             ...currentOrderData,
             userId: currentUser.uid,
@@ -1197,6 +1344,8 @@ document.getElementById('btn-pay-pix').addEventListener('click', async () => {
             userWhatsapp: currentUserData.whatsapp,
             userEmail: currentUserData.email,
             fileUrl: fileUrl,
+            orientationFileUrl: orientationFileUrl,
+            orientationFileName: orientationFileName,
             status: 'Aguardando valor',
             paymentConfirmed: false,
             paymentInformed: false,
@@ -1214,6 +1363,7 @@ document.getElementById('btn-pay-pix').addEventListener('click', async () => {
         document.getElementById('modification-description-group').classList.add('hidden');
         document.getElementById('modification-description').required = false;
         selectedKmlFile = null;
+        selectedOrientationFile = null;
         compassDegree = 0;
         updateCompassVisual();
         clearMapPoints();
@@ -1475,13 +1625,16 @@ function buildAdminOrderBaseHtml(order, orderId) {
             </div>
 
             ${order.fileUrl ? `<a href="${order.fileUrl}" target="_blank" class="btn-secondary">Baixar Arquivo Anexado</a>` : ''}
+            ${order.orientationFileUrl ? `<a href="${order.orientationFileUrl}" target="_blank" class="btn-secondary">Baixar Croqui/Orientação</a>` : ''}
 
             <details class="admin-details">
                 <summary>Ver detalhes técnicos e pontos do mapa</summary>
                 <div style="margin-top: 10px;">
                     <p><strong>Marca/Sistema:</strong> ${escapeHtml(order.systemBrand || "")}</p>
                     <p><strong>Modelo/Formato:</strong> ${escapeHtml(order.systemModel || "")}</p>
-                    <p><strong>Ângulo da rosa dos ventos:</strong> ${escapeHtml(order.compassDegree || "0")}°</p>
+                    <p><strong>Direcionamento:</strong> ${escapeHtml(order.directionLabel || "Definido pela UP Agritechnology")}</p>
+                    ${order.directionMode === "user_defined" ? `<p><strong>Ângulo da rosa dos ventos:</strong> ${escapeHtml(order.compassDegree || "0")}°</p>` : ""}
+                    ${order.orientationFileUrl ? `<p><strong>Arquivo/croqui de orientação:</strong> <a href="${order.orientationFileUrl}" target="_blank">Abrir arquivo</a></p>` : ""}
                     <p><strong>Demanda de modificação:</strong> ${order.modificationRequested ? "Sim" : "Não"}</p>
                     ${order.modificationRequested ? `<p><strong>Descrição da modificação:</strong> ${escapeHtml(order.modificationDescription || "")}</p>` : ""}
                     <p><strong>Observações:</strong> ${escapeHtml(order.observations || "Nenhuma")}</p>

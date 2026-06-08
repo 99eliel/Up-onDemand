@@ -386,6 +386,195 @@
                 height: 130px;
             }
         }
+
+        .client-dashboard {
+            display: grid;
+            gap: 16px;
+        }
+
+        .client-welcome-card {
+            background: linear-gradient(135deg, #1B5E20, #43A047);
+            color: #ffffff;
+            border-radius: 18px;
+            padding: 18px;
+            box-shadow: 0 6px 18px rgba(27,94,32,0.22);
+        }
+
+        .client-welcome-card h3 {
+            margin: 0 0 8px;
+            color: #ffffff;
+            font-size: 1.25rem;
+        }
+
+        .client-welcome-card p {
+            margin: 0;
+            opacity: 0.92;
+            font-size: 0.92rem;
+        }
+
+        .client-main-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .client-action-card {
+            background: #ffffff;
+            border: 1px solid #E0E0E0;
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+            display: flex;
+            flex-direction: column;
+            min-height: 168px;
+        }
+
+        .client-action-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 14px;
+            background: #E8F5E9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            margin-bottom: 10px;
+        }
+
+        .client-action-card h3 {
+            margin: 0 0 8px;
+            color: var(--primary-dark);
+        }
+
+        .client-action-card p {
+            margin: 0 0 14px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            flex: 1;
+        }
+
+        .client-section-card {
+            background: #ffffff;
+            border: 1px solid #E0E0E0;
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+        }
+
+        .direction-options {
+            display: grid;
+            gap: 10px;
+            margin: 12px 0;
+        }
+
+        .direction-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid #E0E0E0;
+            border-radius: 12px;
+            background: #FFFFFF;
+            cursor: pointer;
+        }
+
+        .direction-option input {
+            margin-top: 3px;
+        }
+
+        .direction-option strong {
+            color: #263238;
+        }
+
+        .direction-option span {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.84rem;
+            margin-top: 3px;
+        }
+
+        .north-marker {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            z-index: 801;
+            background: rgba(255,255,255,0.94);
+            border-radius: 12px;
+            padding: 8px 11px;
+            font-weight: 900;
+            color: #1B5E20;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            border: 1px solid rgba(27,94,32,0.16);
+        }
+
+        .north-marker .north-arrow {
+            display: block;
+            text-align: center;
+            font-size: 1.1rem;
+            line-height: 1;
+        }
+
+        .north-marker .north-letter {
+            display: block;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .compass-overlay {
+            left: auto !important;
+            top: auto !important;
+            right: 12px;
+            bottom: 54px;
+            width: 118px !important;
+            height: 118px !important;
+            transform: rotate(0deg);
+        }
+
+        .compass-angle-box {
+            right: 12px;
+            left: auto !important;
+            bottom: 12px;
+        }
+
+        .orientation-sketch-box {
+            background: #FFF8E1;
+            border: 1px solid #FFE082;
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 10px;
+        }
+
+        .modification-only-alert {
+            background: #E3F2FD;
+            border: 1px solid #90CAF9;
+            color: #0D47A1;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 0.9rem;
+            margin: 10px 0;
+        }
+
+        .disabled-section {
+            opacity: 0.45;
+            pointer-events: none;
+            filter: grayscale(0.2);
+        }
+
+        @media (max-width: 640px) {
+            .client-main-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .client-action-card {
+                min-height: auto;
+            }
+
+            .compass-overlay {
+                width: 104px !important;
+                height: 104px !important;
+            }
+        }
+
     </style>
 </head>
 
@@ -542,37 +731,49 @@
                 <p id="user-cpf" style="font-size: 0.8rem; color: var(--text-muted);"></p>
             </div>
 
-            <div class="card">
-                <h3 class="section-title">Como usar</h3>
-                <p style="color: var(--text-muted); font-size: 0.92rem;">
-                    Antes de fazer seu primeiro pedido, siga estas orientações rápidas:
-                </p>
-                <ol class="instruction-list">
-                    <li>Anexe o arquivo da área/talhão em KML, KMZ ou ZIP.</li>
-                    <li>Escolha o sistema/monitor agrícola correspondente.</li>
-                    <li>Marque no mapa de 1 até 12 pontos de referência.</li>
-                    <li>Gire a rosa dos ventos para indicar o sentido desejado das linhas.</li>
-                    <li>Aguarde o orçamento aparecer em “Meus Pedidos”.</li>
-                    <li>Após pagar via PIX, informe o pagamento pelo app.</li>
-                </ol>
+            <div class="client-dashboard">
 
-                <a href="manual_up_agro_instrucoes.pdf" target="_blank" class="btn secondary full-width" style="margin-top: 15px;">
-                    Ver manual completo em PDF
-                </a>
-            </div>
-
-            <div class="profile-actions-grid">
-                <div class="action-card">
-                    <h3>Novo Pedido</h3>
-                    <p>Solicite linhas de piloto automático com mapa, pontos e arquivo da área.</p>
-                    <button id="btn-next-step" class="btn success full-width">Nova Solicitação</button>
+                <div class="client-welcome-card">
+                    <h3>Olá, <span id="client-welcome-name">cliente</span> 👋</h3>
+                    <p>Escolha uma das opções abaixo para solicitar serviços, acompanhar pedidos ou consultar o manual completo.</p>
                 </div>
 
-                <div class="action-card">
-                    <h3>Aerofoto / Levantamento</h3>
-                    <p>Solicite orçamento para aerofoto ou levantamento da área.</p>
-                    <a id="btn-aerofoto-email" class="btn primary full-width" href="mailto:atendimento@upagritechnology.com.br?subject=Orçamento%20para%20aerofoto%20e%20levantamento">Solicitar por E-mail</a>
+                <div class="client-main-actions">
+                    <div class="client-action-card">
+                        <div class="client-action-icon">🚜</div>
+                        <h3>Novo Pedido</h3>
+                        <p>Solicite linhas de piloto automático com arquivo da área, pontos de referência e direcionamento das linhas.</p>
+                        <button id="btn-next-step" class="btn success full-width">Nova Solicitação</button>
+                    </div>
+
+                    <div class="client-action-card">
+                        <div class="client-action-icon">🛰️</div>
+                        <h3>Aerofoto / Levantamento</h3>
+                        <p>Solicitar aerofotolevantamento de sua área.</p>
+                        <a id="btn-aerofoto-email" class="btn primary full-width" href="mailto:atendimento@upagritechnology.com.br?subject=Orçamento%20para%20aerofotolevantamento%20de%20área">Solicitar por E-mail</a>
+                    </div>
                 </div>
+
+                <div class="client-section-card">
+                    <h3 class="section-title">Como usar</h3>
+                    <p style="color: var(--text-muted); font-size: 0.92rem;">
+                        Antes de fazer seu primeiro pedido, veja o resumo:
+                    </p>
+                    <ol class="instruction-list">
+                        <li>Anexe o arquivo da área/talhão em KML, KMZ ou ZIP.</li>
+                        <li>Escolha o sistema/monitor agrícola correspondente.</li>
+                        <li>Marque de 1 até 12 pontos no mapa. Se quiser que a equipe interprete, marque 1 ponto no meio do talhão.</li>
+                        <li>Escolha o direcionamento das linhas: definido pela UP, sentido informado por você, ou envio de croqui/orientação.</li>
+                        <li>A rosa dos ventos aparece apenas quando você escolher informar o sentido desejado.</li>
+                        <li>Se for somente modificação de arquivo, marque essa opção e descreva o que precisa ser alterado.</li>
+                        <li>Aguarde o orçamento aparecer em “Meus Pedidos”.</li>
+                    </ol>
+
+                    <a href="manual_up_agro_instrucoes.pdf" target="_blank" class="btn secondary full-width" style="margin-top: 15px;">
+                        Ver manual completo em PDF
+                    </a>
+                </div>
+
             </div>
 
             <button id="btn-admin-panel" class="btn secondary full-width hidden-by-state" style="margin-bottom: 18px;">⚙️ Acessar Painel ADM</button>
@@ -660,7 +861,7 @@
                     </label>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="map-reference-section">
                     <label>Marque os pontos de referência no mapa *</label>
                     <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">
                         Você pode marcar de 1 até 12 pontos. Caso queira que a equipe interprete pelo arquivo enviado, marque apenas 1 ponto no meio do talhão.
@@ -681,7 +882,12 @@
                     <div class="map-wrapper">
                         <div id="reference-map"></div>
 
-                        <div id="compass-overlay" class="compass-overlay" title="Arraste para girar a rosa dos ventos">
+                        <div class="north-marker">
+                            <span class="north-arrow">↑</span>
+                            <span class="north-letter">N</span>
+                        </div>
+
+                        <div id="compass-overlay" class="compass-overlay hidden" title="Arraste para girar a rosa dos ventos">
                             <div class="compass-arrow-visual"></div>
                             <span class="compass-letter compass-n">N</span>
                             <span class="compass-letter compass-s">S</span>
@@ -690,7 +896,7 @@
                             <div class="compass-center"></div>
                         </div>
 
-                        <div class="compass-angle-box">
+                        <div id="compass-angle-box" class="compass-angle-box hidden">
                             Ângulo: <span id="compass-value">0°</span>
                         </div>
                     </div>
@@ -698,6 +904,42 @@
                     <button type="button" id="btn-clear-map-points" class="btn secondary full-width">
                         Limpar Pontos do Mapa
                     </button>
+                </div>
+
+                <div class="form-group" id="direction-section">
+                    <label>Direcionamento das Linhas *</label>
+
+                    <div class="direction-options">
+                        <label class="direction-option">
+                            <input type="radio" name="line-direction-mode" value="up_defined" checked>
+                            <div>
+                                <strong>Definido pela UP Agritechnology (recomendado)</strong>
+                                <span>A equipe interpreta o melhor sentido das linhas com base no arquivo e nos pontos enviados.</span>
+                            </div>
+                        </label>
+
+                        <label class="direction-option">
+                            <input type="radio" name="line-direction-mode" value="user_defined">
+                            <div>
+                                <strong>Informarei o sentido desejado</strong>
+                                <span>Ao selecionar esta opção, use a rosa dos ventos no canto do mapa para definir o ângulo.</span>
+                            </div>
+                        </label>
+
+                        <label class="direction-option">
+                            <input type="radio" name="line-direction-mode" value="orientation_file">
+                            <div>
+                                <strong>Enviar arquivo ou croqui com orientação específica</strong>
+                                <span>Anexe um PDF, imagem ou arquivo complementar indicando a orientação desejada.</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div id="orientation-file-group" class="orientation-sketch-box hidden">
+                        <label for="orientation-file-upload">Anexar arquivo ou croqui de orientação *</label>
+                        <input type="file" id="orientation-file-upload" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.kml,.kmz,.zip">
+                        <p id="orientation-filename" style="font-size: 0.86rem; color: var(--text-muted); margin-top: 8px;">Nenhum arquivo selecionado</p>
+                    </div>
                 </div>
 
                 <hr class="divider">
@@ -756,13 +998,16 @@
                 <div class="form-group" style="margin-top: 15px;">
                     <label class="checkbox-label">
                         <input type="checkbox" id="modification-requested" class="large-checkbox">
-                        <span>Também preciso de demanda de modificação de arquivo</span>
+                        <span>Este pedido é somente uma demanda de modificação de arquivo</span>
                     </label>
+                    <div id="modification-only-alert" class="modification-only-alert hidden">
+                        Quando essa opção estiver marcada, os campos técnicos serão desabilitados. Explique abaixo o que precisa ser modificado no arquivo.
+                    </div>
                 </div>
 
                 <div class="form-group hidden" id="modification-description-group">
-                    <label>Descreva a modificação desejada</label>
-                    <textarea id="modification-description" class="form-control" rows="3" placeholder="Ex: corrigir borda, converter arquivo, ajustar linhas, revisar talhão..."></textarea>
+                    <label>Explique o que deseja modificar *</label>
+                    <textarea id="modification-description" class="form-control" rows="4" placeholder="Ex: corrigir borda, converter arquivo, ajustar linhas, revisar talhão, ajustar formato para outro monitor..."></textarea>
                 </div>
 
                 <div class="form-group">
@@ -937,7 +1182,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script type="module" src="app.js?v=auth-20260605"></script>
+    <script type="module" src="app.js?v=direcionamento-20260605"></script>
 
 </body>
 
