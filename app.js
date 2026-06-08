@@ -695,6 +695,28 @@ document.getElementById('user-orders-container').addEventListener('click', async
     }
 });
 
+
+function ensureCardinalMarkers() {
+    const wrapper = document.querySelector('.map-wrapper');
+    if (!wrapper) return;
+
+    const markers = [
+        ["up-cardinal-n", "N"],
+        ["up-cardinal-s", "S"],
+        ["up-cardinal-e", "L"],
+        ["up-cardinal-w", "O"]
+    ];
+
+    markers.forEach(([className, letter]) => {
+        if (!wrapper.querySelector(`.${className}`)) {
+            const marker = document.createElement('div');
+            marker.className = `up-cardinal ${className}`;
+            marker.textContent = letter;
+            wrapper.appendChild(marker);
+        }
+    });
+}
+
 // ==========================================
 // MAPA DE REFERÊNCIA E ROSA DOS VENTOS
 // ==========================================
@@ -839,6 +861,7 @@ function addReferencePoint(lat, lng) {
 }
 
 function initReferenceMap() {
+    ensureCardinalMarkers();
     const mapEl = document.getElementById('reference-map');
 
     if (!mapEl || typeof L === "undefined") return;
@@ -846,6 +869,7 @@ function initReferenceMap() {
     if (referenceMap) {
         setTimeout(() => {
             referenceMap.invalidateSize();
+            ensureCardinalMarkers();
         }, 300);
         return;
     }
