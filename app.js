@@ -1,5 +1,12 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import {
     getFirestore,
     doc,
     getDoc,
@@ -30,6 +37,7 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
 
@@ -37,22 +45,44 @@ const storage = getStorage(app);
 // VARIÁVEIS GLOBAIS E UTILITÁRIOS
 // ==========================================
 
+let currentUser = null;
 let currentUserData = null;
+let currentUserIsAdmin = false;
 let selectedLogoFile = null;
 let selectedKmlFile = null;
 let currentOrderData = {};
-let tempLoginData = {};
 let deferredPrompt;
+
 let referenceMap = null;
 let referenceMarkers = [];
 let referencePolygon = null;
 let currentLocationMarker = null;
 let selectedMapPoints = [];
+let compassDegree = 0;
+let isDraggingCompass = false;
+
+const MAX_MAP_POINTS = 12;
+
+const systemModels = {
+    "Monitores ISO11783": ["TaskData"],
+    "Fendt": ["Shapefile"],
+    "Topcon": ["Shapefile"],
+    "Stara": ["Dados"],
+    "CNH Industrial": [".CN1", "Shapefile"],
+    "Trimble": ["AgGPS", "AgData"],
+    "John Deere": ["GS2 1800", "GS3 2630", "GEN4 4600"]
+};
 
 function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
     document.getElementById(screenId).classList.add('active');
     window.scrollTo(0, 0);
+
+    if (screenId === 'request-screen') {
+        setTimeout(() => {
+            initReferenceMap();
+        }, 300);
+    }
 }
 
 const showLoading = (msg) => {
@@ -116,7 +146,44 @@ const copyText = async (text) => {
     }
 };
 
-document.getElementById('login-cpf').addEventListener('input', (e) => {
+function getAuthErrorMessage(error) {
+    const code = error?.code || "";
+
+    if (code.includes("auth/email-already-in-use")) {
+        return "Este e-mail já está cadastrado.";
+    }
+
+    if (code.includes("auth/invalid-email")) {
+        return "E-mail inválido.";
+    }
+
+    if (code.includes("auth/weak-password")) {
+        return "A senha precisa ter pelo menos 6 caracteres.";
+    }
+
+    if (code.includes("auth/user-not-found") || code.includes("auth/wrong-password") || code.includes("auth/invalid-credential")) {
+        return "E-mail ou senha incorretos.";
+    }
+
+    return error.message || "Erro de autenticação.";
+}
+
+function getStatusClass(status, archived = false) {
+    if (archived) return "status-archived";
+    if (status === "Aguardando valor" || status === "Pendente") return "status-waiting-price";
+    if (status === "Aguardando pagamento") return "status-waiting-payment";
+    if (status === "Pagamento informado") return "status-payment-informed";
+    if (status === "Na fila" || status === "Em produção") return "status-queue";
+    if (status === "Concluído") return "status-done";
+    return "status-waiting-price";
+}
+
+function getStatusText(status, archived = false) {
+    if (archived) return "Arquivado";
+    return status || "Aguardando valor";
+}
+
+document.getElementById('reg-cpf').addEventListener('input', (e) => {
     e.target.value = maskCPF(e.target.value);
 });
 
@@ -124,7 +191,7 @@ document.getElementById('reg-whatsapp').addEventListener('input', (e) => {
     e.target.value = maskPhone(e.target.value);
 });
 
-document.getElementById('login-dob').addEventListener('input', (e) => {
+document.getElementById('reg-dob').addEventListener('input', (e) => {
     e.target.value = maskDate(e.target.value);
 });
 
@@ -147,7 +214,6 @@ async function loadGlobalSettings() {
 
             if (data.logoUrl) {
                 document.getElementById('main-app-logo').src = data.logoUrl;
-                document.getElementById('main-app-logo-reg').src = data.logoUrl;
             }
         }
     } catch (error) {
@@ -199,122 +265,165 @@ document.getElementById('btn-close-ios').addEventListener('click', () => {
 });
 
 // ==========================================
-// LOGIN E CADASTRO
+// AUTH, LOGIN E CADASTRO
 // ==========================================
 
-const savedCpf = localStorage.getItem('upagri_user_cpf');
+onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
 
-if (savedCpf) {
-    autoLogin(savedCpf);
-}
+    if (!user) {
+        currentUserData = null;
+        currentUserIsAdmin = false;
+        document.getElementById('btn-admin-panel').classList.add('hidden-by-state');
+        hideLoading();
+        showScreen('login-screen');
+        return;
+    }
 
-async function autoLogin(cpf) {
-    showLoading('Carregando Perfil...');
+    showLoading('Carregando perfil...');
 
     try {
-        const docSnap = await getDoc(doc(db, "users", cpf));
+        const userDoc = await getDoc(doc(db, "users", user.uid));
 
-        if (docSnap.exists()) {
-            currentUserData = docSnap.data();
-            currentUserData.cpf = cpf;
+        if (userDoc.exists()) {
+            currentUserData = userDoc.data();
+            currentUserData.uid = user.uid;
+
+            const adminDoc = await getDoc(doc(db, "admins", user.uid));
+            currentUserIsAdmin = adminDoc.exists() && adminDoc.data().active !== false;
 
             setupProfileScreen();
             showScreen('profile-screen');
         } else {
-            localStorage.removeItem('upagri_user_cpf');
-            showScreen('login-screen');
+            showScreen('complete-profile-screen');
         }
     } catch (error) {
-        showScreen('login-screen');
+        console.error(error);
+        alert("Erro ao carregar perfil. Verifique as regras do Firebase.");
     } finally {
         hideLoading();
     }
-}
+});
 
-document.getElementById('login-form').addEventListener('submit', async (e) => {
+document.getElementById('btn-go-create-account').addEventListener('click', () => {
+    document.getElementById('create-account-form').reset();
+    showScreen('create-account-screen');
+});
+
+document.getElementById('btn-back-login-create').addEventListener('click', () => {
+    showScreen('login-screen');
+});
+
+document.getElementById('create-account-form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const cpf = document.getElementById('login-cpf').value.replace(/\D/g, "");
-    const dob = document.getElementById('login-dob').value;
+    const email = document.getElementById('create-email').value.trim();
+    const password = document.getElementById('create-password').value;
+
+    showLoading('Criando acesso...');
+
+    try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        document.getElementById('complete-profile-form').reset();
+        showScreen('complete-profile-screen');
+    } catch (error) {
+        alert(getAuthErrorMessage(error));
+    } finally {
+        hideLoading();
+    }
+});
+
+document.getElementById('complete-profile-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!auth.currentUser) {
+        return alert("Crie seu acesso primeiro.");
+    }
+
+    const cpf = document.getElementById('reg-cpf').value.replace(/\D/g, "");
 
     if (cpf.length !== 11) {
         return alert("CPF inválido.");
     }
 
-    showLoading('Verificando...');
+    showLoading('Salvando cadastro...');
 
     try {
-        const docSnap = await getDoc(doc(db, "users", cpf));
-
-        if (docSnap.exists()) {
-            if (docSnap.data().dob === dob) {
-                localStorage.setItem('upagri_user_cpf', cpf);
-
-                currentUserData = docSnap.data();
-                currentUserData.cpf = cpf;
-
-                setupProfileScreen();
-                showScreen('profile-screen');
-            } else {
-                alert("Data de Nascimento incorreta.");
-            }
-        } else {
-            tempLoginData = { cpf, dob };
-            showScreen('register-screen');
-        }
-    } catch (error) {
-        alert("Erro de conexão: " + error.message);
-    } finally {
-        hideLoading();
-    }
-});
-
-document.getElementById('register-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    showLoading('Criando Conta...');
-
-    try {
-        const newUser = {
-            dob: tempLoginData.dob,
-            name: document.getElementById('reg-name').value,
+        const userProfile = {
+            name: document.getElementById('reg-name').value.trim(),
+            cpf: cpf,
+            dob: document.getElementById('reg-dob').value,
             whatsapp: document.getElementById('reg-whatsapp').value,
+            email: auth.currentUser.email,
             whiteLabelActive: false,
-            logoUrl: ""
+            logoUrl: "",
+            createdAt: serverTimestamp()
         };
 
-        await setDoc(doc(db, "users", tempLoginData.cpf), newUser);
+        await setDoc(doc(db, "users", auth.currentUser.uid), userProfile);
 
-        localStorage.setItem('upagri_user_cpf', tempLoginData.cpf);
+        alert("Cadastro concluído! Agora faça login com seu e-mail e senha.");
 
-        currentUserData = newUser;
-        currentUserData.cpf = tempLoginData.cpf;
+        await signOut(auth);
 
-        setupProfileScreen();
-        showScreen('profile-screen');
+        document.getElementById('login-form').reset();
+        showScreen('login-screen');
     } catch (error) {
-        alert("Erro no cadastro: " + error.message);
+        console.error(error);
+        alert("Erro ao salvar cadastro.");
     } finally {
         hideLoading();
     }
 });
 
-document.getElementById('btn-logout').addEventListener('click', () => {
-    localStorage.removeItem('upagri_user_cpf');
-    currentUserData = null;
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    showLoading('Entrando...');
+
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+        alert(getAuthErrorMessage(error));
+    } finally {
+        hideLoading();
+    }
+});
+
+document.getElementById('btn-logout').addEventListener('click', async () => {
+    await signOut(auth);
     document.getElementById('login-form').reset();
     showScreen('login-screen');
 });
 
 // ==========================================
-// PERFIL WHITE LABEL E PEDIDOS DO CLIENTE
+// PERFIL, WHITE LABEL E PEDIDOS DO CLIENTE
 // ==========================================
 
 function setupProfileScreen() {
-    document.getElementById('user-name').textContent = currentUserData.name;
-    document.getElementById('user-phone').textContent = currentUserData.whatsapp;
-    document.getElementById('user-cpf').textContent = maskCPF(currentUserData.cpf);
-    document.getElementById('user-avatar-initials').textContent = currentUserData.name.charAt(0).toUpperCase();
+    document.getElementById('user-name').textContent = currentUserData.name || "Usuário";
+    document.getElementById('user-phone').textContent = currentUserData.whatsapp || "";
+    document.getElementById('user-email').textContent = currentUserData.email || "";
+    document.getElementById('user-cpf').textContent = currentUserData.cpf ? maskCPF(currentUserData.cpf) : "";
+    document.getElementById('user-avatar-initials').textContent = (currentUserData.name || "U").charAt(0).toUpperCase();
+
+    const adminButton = document.getElementById('btn-admin-panel');
+
+    if (currentUserIsAdmin) {
+        adminButton.classList.remove('hidden-by-state');
+    } else {
+        adminButton.classList.add('hidden-by-state');
+    }
+
+    const aerofotoLink = document.getElementById('btn-aerofoto-email');
+    const subject = encodeURIComponent("Orçamento para aerofoto e levantamento");
+    const body = encodeURIComponent(
+        `Olá, equipe UP AGRO.\n\nGostaria de solicitar orçamento para aerofoto/levantamento.\n\nNome: ${currentUserData.name || ""}\nWhatsApp: ${currentUserData.whatsapp || ""}\nCPF: ${currentUserData.cpf || ""}\n\nDescrição da demanda:\n`
+    );
+    aerofotoLink.href = `mailto:atendimento@upagritechnology.com.br?subject=${subject}&body=${body}`;
 
     const toggleWL = document.getElementById('toggle-white-label');
     const uploadArea = document.getElementById('logo-upload-area');
@@ -366,14 +475,14 @@ document.getElementById('btn-save-profile').addEventListener('click', async () =
 
         if (isWL && selectedLogoFile) {
             const snapshot = await uploadBytes(
-                ref(storage, `logos/${currentUserData.cpf}_${selectedLogoFile.name}`),
+                ref(storage, `logos/${currentUser.uid}/${Date.now()}_${selectedLogoFile.name}`),
                 selectedLogoFile
             );
 
             logoUrl = await getDownloadURL(snapshot.ref);
         }
 
-        await setDoc(doc(db, "users", currentUserData.cpf), {
+        await setDoc(doc(db, "users", currentUser.uid), {
             whiteLabelActive: isWL,
             logoUrl: isWL ? logoUrl : ""
         }, { merge: true });
@@ -383,54 +492,17 @@ document.getElementById('btn-save-profile').addEventListener('click', async () =
 
         alert("Salvo!");
     } catch (e) {
+        console.error(e);
         alert("Erro ao salvar.");
     } finally {
         hideLoading();
     }
 });
 
-
-function getStatusClass(status, archived = false) {
-    if (archived) {
-        return "status-archived";
-    }
-
-    if (status === "Aguardando valor" || status === "Pendente") {
-        return "status-waiting-price";
-    }
-
-    if (status === "Aguardando pagamento") {
-        return "status-waiting-payment";
-    }
-
-    if (status === "Pagamento informado") {
-        return "status-payment-informed";
-    }
-
-    if (status === "Na fila" || status === "Em produção") {
-        return "status-queue";
-    }
-
-    if (status === "Concluído") {
-        return "status-done";
-    }
-
-    return "status-waiting-price";
-}
-
-function getStatusText(status, archived = false) {
-    if (archived) {
-        return "Arquivado";
-    }
-
-    return status || "Aguardando valor";
-}
-
-
 async function loadUserOrders() {
     const container = document.getElementById('user-orders-container');
 
-    if (!currentUserData || !currentUserData.cpf) {
+    if (!currentUser) {
         container.innerHTML = "<p>Entre na conta para visualizar seus pedidos.</p>";
         return;
     }
@@ -440,7 +512,7 @@ async function loadUserOrders() {
     try {
         const q = query(
             collection(db, "orders"),
-            where("userCpf", "==", currentUserData.cpf)
+            where("userId", "==", currentUser.uid)
         );
 
         const querySnapshot = await getDocs(q);
@@ -470,7 +542,6 @@ async function loadUserOrders() {
 
         userOrders.forEach((order) => {
             const orderId = order.id;
-
             const status = order.status || "Aguardando valor";
             const dateStr = order.createdAt
                 ? new Date(order.createdAt.toDate()).toLocaleDateString('pt-BR')
@@ -525,30 +596,30 @@ async function loadUserOrders() {
 
             ordersList.innerHTML += `
                 <div class="user-order-card">
-                    <div class="user-order-header">
+                    <div class="order-card-header">
                         <div>
-                            <h4 class="user-order-title">${escapeHtml(order.fieldName || "Pedido sem talhão")}</h4>
-                            <p class="user-order-subtitle">${escapeHtml(order.farmName || "Fazenda não informada")} • ${dateStr}</p>
+                            <h4 class="order-title">${escapeHtml(order.fieldName || "Pedido sem talhão")}</h4>
+                            <p class="order-subtitle">${escapeHtml(order.farmName || "Fazenda não informada")} • ${dateStr}</p>
                         </div>
                         <span class="status-badge ${statusClass}">${escapeHtml(statusText)}</span>
                     </div>
 
-                    <div class="order-info-grid">
-                        <div class="order-info-item">
-                            <span class="order-info-label">Valor</span>
-                            <span class="order-info-value">${formatMoney(order.price)}</span>
+                    <div class="info-grid">
+                        <div class="info-box">
+                            <span class="info-label">Valor</span>
+                            <span class="info-value">${formatMoney(order.price)}</span>
                         </div>
-                        <div class="order-info-item">
-                            <span class="order-info-label">Operação</span>
-                            <span class="order-info-value">${escapeHtml(order.operationType || "—")}</span>
+                        <div class="info-box">
+                            <span class="info-label">Operação</span>
+                            <span class="info-value">${escapeHtml(order.operationType || "—")}</span>
                         </div>
-                        <div class="order-info-item">
-                            <span class="order-info-label">Largura</span>
-                            <span class="order-info-value">${escapeHtml(order.implementWidth || "—")}m</span>
+                        <div class="info-box">
+                            <span class="info-label">Largura</span>
+                            <span class="info-value">${escapeHtml(order.implementWidth || "—")}m</span>
                         </div>
-                        <div class="order-info-item">
-                            <span class="order-info-label">Monitor</span>
-                            <span class="order-info-value">${escapeHtml(order.gpsModel || "—")}</span>
+                        <div class="info-box">
+                            <span class="info-label">Sistema</span>
+                            <span class="info-value">${escapeHtml(order.gpsModel || "—")}</span>
                         </div>
                     </div>
 
@@ -559,7 +630,10 @@ async function loadUserOrders() {
                         <div style="margin-top: 10px;">
                             <p><strong>Fazenda:</strong> ${escapeHtml(order.farmName)}</p>
                             <p><strong>Talhão:</strong> ${escapeHtml(order.fieldName)}</p>
-                            <p><strong>Sentido:</strong> ${escapeHtml(order.compassDegree || "0")}°</p>
+                            <p><strong>Sistema:</strong> ${escapeHtml(order.systemBrand || "")} ${escapeHtml(order.systemModel || "")}</p>
+                            <p><strong>Ângulo:</strong> ${escapeHtml(order.compassDegree || "0")}°</p>
+                            <p><strong>Demanda de modificação:</strong> ${order.modificationRequested ? "Sim" : "Não"}</p>
+                            ${order.modificationRequested ? `<p><strong>Descrição:</strong> ${escapeHtml(order.modificationDescription || "")}</p>` : ""}
                             <p><strong>Observações:</strong> ${escapeHtml(order.observations || "Nenhuma")}</p>
                             ${buildMapPointsHtml(order.mapPoints)}
                         </div>
@@ -614,21 +688,18 @@ document.getElementById('user-orders-container').addEventListener('click', async
     }
 });
 
-
 // ==========================================
-// MAPA DE REFERÊNCIA DO PEDIDO
+// MAPA DE REFERÊNCIA E ROSA DOS VENTOS
 // ==========================================
 
 function updateMapPointsStatus() {
     const statusEl = document.getElementById('map-points-status');
 
-    if (!statusEl) {
-        return;
-    }
+    if (!statusEl) return;
 
-    statusEl.textContent = `${selectedMapPoints.length} de 4 pontos marcados`;
+    statusEl.textContent = `${selectedMapPoints.length} de ${MAX_MAP_POINTS} pontos marcados`;
 
-    if (selectedMapPoints.length === 4) {
+    if (selectedMapPoints.length >= 1) {
         statusEl.textContent += " ✔";
         statusEl.style.color = "green";
     } else {
@@ -637,9 +708,7 @@ function updateMapPointsStatus() {
 }
 
 function drawReferencePolygon() {
-    if (!referenceMap) {
-        return;
-    }
+    if (!referenceMap) return;
 
     if (referencePolygon) {
         referenceMap.removeLayer(referencePolygon);
@@ -676,8 +745,7 @@ function clearMapPoints() {
     updateMapPointsStatus();
 }
 
-
-function centerMapOnCurrentLocation(addPointAfterCenter = false) {
+function centerMapOnCurrentLocation() {
     if (!referenceMap) {
         initReferenceMap();
     }
@@ -710,10 +778,6 @@ function centerMapOnCurrentLocation(addPointAfterCenter = false) {
                 .bindPopup("Sua localização atual")
                 .openPopup();
 
-            if (addPointAfterCenter) {
-                addReferencePoint(lat, lng);
-            }
-
             setTimeout(() => {
                 referenceMap.invalidateSize();
             }, 300);
@@ -741,12 +805,10 @@ function centerMapOnCurrentLocation(addPointAfterCenter = false) {
 }
 
 function addReferencePoint(lat, lng) {
-    if (!referenceMap) {
-        return;
-    }
+    if (!referenceMap) return;
 
-    if (selectedMapPoints.length >= 4) {
-        alert("Você já marcou os 4 pontos. Para alterar, clique em Limpar Pontos do Mapa.");
+    if (selectedMapPoints.length >= MAX_MAP_POINTS) {
+        alert(`Você já marcou o limite de ${MAX_MAP_POINTS} pontos. Para alterar, clique em Limpar Pontos do Mapa.`);
         return;
     }
 
@@ -772,9 +834,7 @@ function addReferencePoint(lat, lng) {
 function initReferenceMap() {
     const mapEl = document.getElementById('reference-map');
 
-    if (!mapEl || typeof L === "undefined") {
-        return;
-    }
+    if (!mapEl || typeof L === "undefined") return;
 
     if (referenceMap) {
         setTimeout(() => {
@@ -836,9 +896,7 @@ function initReferenceMap() {
                     .addTo(referenceMap)
                     .bindPopup("Sua localização atual");
             },
-            () => {
-                // Mantém o mapa no Brasil caso o usuário não autorize localização automaticamente.
-            },
+            () => {},
             {
                 enableHighAccuracy: true,
                 timeout: 8000,
@@ -852,27 +910,18 @@ function initReferenceMap() {
     }, 300);
 
     updateMapPointsStatus();
+    updateCompassVisual();
 }
 
 function getGoogleMapsReferenceLink(points) {
-    if (!points || points.length === 0) {
-        return "";
-    }
-
+    if (!points || points.length === 0) return "";
     const firstPoint = points[0];
-
     return `https://www.google.com/maps/search/?api=1&query=${firstPoint.lat},${firstPoint.lng}`;
 }
 
 function getGoogleMapsRouteLink(points) {
-    if (!points || points.length === 0) {
-        return "";
-    }
-
-    const path = points
-        .map(point => `${point.lat},${point.lng}`)
-        .join('/');
-
+    if (!points || points.length === 0) return "";
+    const path = points.map(point => `${point.lat},${point.lng}`).join('/');
     return `https://www.google.com/maps/dir/${path}`;
 }
 
@@ -890,7 +939,7 @@ function buildMapPointsHtml(points) {
 
     return `
         <div style="margin-top: 10px;">
-            <p><strong>Pontos de referência:</strong> ${points.length} ponto(s) marcados</p>
+            <p><strong>Pontos de referência:</strong> ${points.length} ponto(s) marcado(s)</p>
             <ol class="map-points-list">
                 ${pointsList}
             </ol>
@@ -902,6 +951,64 @@ function buildMapPointsHtml(points) {
     `;
 }
 
+function updateCompassVisual() {
+    const compass = document.getElementById('compass-overlay');
+    const value = document.getElementById('compass-value');
+
+    if (compass) {
+        compass.style.transform = `translate(-50%, -50%) rotate(${compassDegree}deg)`;
+    }
+
+    if (value) {
+        value.textContent = `${Math.round(compassDegree)}°`;
+    }
+}
+
+function updateCompassFromPointer(clientX, clientY) {
+    const compass = document.getElementById('compass-overlay');
+
+    if (!compass) return;
+
+    const rect = compass.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+
+    const radians = Math.atan2(clientX - centerX, centerY - clientY);
+    let degrees = radians * (180 / Math.PI);
+
+    if (degrees < 0) degrees += 360;
+
+    compassDegree = Math.round(degrees);
+    updateCompassVisual();
+}
+
+const compassEl = document.getElementById('compass-overlay');
+
+compassEl.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isDraggingCompass = true;
+    compassEl.setPointerCapture(e.pointerId);
+    updateCompassFromPointer(e.clientX, e.clientY);
+});
+
+compassEl.addEventListener('pointermove', (e) => {
+    if (!isDraggingCompass) return;
+    e.preventDefault();
+    e.stopPropagation();
+    updateCompassFromPointer(e.clientX, e.clientY);
+});
+
+compassEl.addEventListener('pointerup', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    isDraggingCompass = false;
+    compassEl.releasePointerCapture(e.pointerId);
+});
+
+compassEl.addEventListener('pointercancel', () => {
+    isDraggingCompass = false;
+});
 
 // ==========================================
 // SOLICITAÇÃO E CHECKOUT
@@ -909,13 +1016,17 @@ function buildMapPointsHtml(points) {
 
 document.getElementById('btn-next-step').addEventListener('click', () => {
     document.getElementById('service-form').reset();
-    document.getElementById('gps-other-group').classList.add('hidden');
-    document.getElementById('gps-other-model').required = false;
+    document.getElementById('system-other-group').classList.add('hidden');
+    document.getElementById('system-other-name').required = false;
+    document.getElementById('modification-description-group').classList.add('hidden');
+    document.getElementById('modification-description').required = false;
     selectedKmlFile = null;
-    document.getElementById('kml-filename').textContent = "Anexar Arquivo .KML ou .SHP (Zip) *";
+    compassDegree = 0;
+    updateCompassVisual();
+    document.getElementById('system-model').innerHTML = `<option value="">Selecione primeiro a marca/sistema...</option>`;
+    document.getElementById('kml-filename').textContent = "Anexar Arquivo KML/KMZ/SHP em ZIP *";
     clearMapPoints();
     showScreen('request-screen');
-    initReferenceMap();
 });
 
 document.getElementById('btn-back-profile').addEventListener('click', () => {
@@ -925,74 +1036,122 @@ document.getElementById('btn-back-profile').addEventListener('click', () => {
 
 document.getElementById('btn-back-request').addEventListener('click', () => {
     showScreen('request-screen');
-    initReferenceMap();
 });
+
 document.getElementById('btn-clear-map-points').addEventListener('click', () => {
     clearMapPoints();
 });
 
 document.getElementById('btn-current-location').addEventListener('click', () => {
-    centerMapOnCurrentLocation(false);
+    centerMapOnCurrentLocation();
 });
-
 
 document.getElementById('kml-upload').addEventListener('change', (e) => {
     selectedKmlFile = e.target.files[0];
 
     document.getElementById('kml-filename').textContent = selectedKmlFile
         ? `✔ ${selectedKmlFile.name}`
-        : "Anexar Arquivo .KML ou .SHP (Zip) *";
+        : "Anexar Arquivo KML/KMZ/SHP em ZIP *";
 });
 
-document.getElementById('gps-model').addEventListener('change', (e) => {
-    const otherGroup = document.getElementById('gps-other-group');
-    const otherInput = document.getElementById('gps-other-model');
+document.getElementById('system-brand').addEventListener('change', (e) => {
+    const brand = e.target.value;
+    const modelSelect = document.getElementById('system-model');
+    const otherGroup = document.getElementById('system-other-group');
+    const otherInput = document.getElementById('system-other-name');
 
-    if (e.target.value === "Outro") {
+    modelSelect.innerHTML = `<option value="">Selecione...</option>`;
+
+    if (brand === "Outro sistema") {
         otherGroup.classList.remove('hidden');
         otherInput.required = true;
-    } else {
-        otherGroup.classList.add('hidden');
-        otherInput.required = false;
-        otherInput.value = "";
+        modelSelect.required = false;
+        modelSelect.disabled = true;
+        modelSelect.innerHTML = `<option value="Outro">Outro</option>`;
+        return;
+    }
+
+    otherGroup.classList.add('hidden');
+    otherInput.required = false;
+    otherInput.value = "";
+    modelSelect.required = true;
+    modelSelect.disabled = false;
+
+    if (systemModels[brand]) {
+        systemModels[brand].forEach(model => {
+            const option = document.createElement('option');
+            option.value = model;
+            option.textContent = model;
+            modelSelect.appendChild(option);
+        });
     }
 });
 
-document.getElementById('compass-slider').addEventListener('input', (e) => {
-    document.getElementById('compass-arrow').style.transform = `rotate(${e.target.value}deg)`;
-    document.getElementById('compass-value').textContent = `${e.target.value}°`;
+document.getElementById('modification-requested').addEventListener('change', (e) => {
+    const group = document.getElementById('modification-description-group');
+    const textarea = document.getElementById('modification-description');
+
+    if (e.target.checked) {
+        group.classList.remove('hidden');
+        textarea.required = true;
+    } else {
+        group.classList.add('hidden');
+        textarea.required = false;
+        textarea.value = "";
+    }
 });
 
 document.getElementById('service-form').addEventListener('submit', (e) => {
     e.preventDefault();
 
     if (!selectedKmlFile) {
-        return alert("Anexe o arquivo KML/SHP.");
+        return alert("Anexe o arquivo KML/KMZ/SHP em ZIP.");
     }
 
-    if (selectedMapPoints.length !== 4) {
-        return alert("Marque os 4 pontos de referência no mapa antes de continuar.");
+    if (selectedMapPoints.length < 1) {
+        return alert("Marque pelo menos 1 ponto de referência no mapa.");
     }
 
-    const gpsModelSelect = document.getElementById('gps-model').value;
-    const gpsOtherModel = document.getElementById('gps-other-model').value.trim();
-
-    if (gpsModelSelect === "Outro" && !gpsOtherModel) {
-        return alert("Informe qual é o modelo do monitor.");
+    if (selectedMapPoints.length > MAX_MAP_POINTS) {
+        return alert(`Marque no máximo ${MAX_MAP_POINTS} pontos.`);
     }
 
-    const finalGpsModel = gpsModelSelect === "Outro"
-        ? `Outro - ${gpsOtherModel}`
-        : gpsModelSelect;
+    const systemBrand = document.getElementById('system-brand').value;
+    let systemModel = document.getElementById('system-model').value;
+
+    if (systemBrand === "Outro sistema") {
+        const otherName = document.getElementById('system-other-name').value.trim();
+
+        if (!otherName) {
+            return alert("Informe o nome do sistema.");
+        }
+
+        systemModel = otherName;
+    }
+
+    const modificationRequested = document.getElementById('modification-requested').checked;
+    const modificationDescription = document.getElementById('modification-description').value.trim();
+
+    if (modificationRequested && !modificationDescription) {
+        return alert("Descreva a demanda de modificação do arquivo.");
+    }
+
+    const gpsModel = systemBrand === "Outro sistema"
+        ? `Outro sistema - ${systemModel}`
+        : `${systemBrand} - ${systemModel}`;
 
     currentOrderData = {
-        farmName: document.getElementById('farm-name').value,
-        fieldName: document.getElementById('field-name').value,
+        farmName: document.getElementById('farm-name').value.trim(),
+        fieldName: document.getElementById('field-name').value.trim(),
         operationType: document.getElementById('operation-type').value,
         implementWidth: document.getElementById('implement-width').value,
-        gpsModel: finalGpsModel,
-        compassDegree: document.getElementById('compass-slider').value,
-        observations: document.getElementById('observations').value,
+        systemBrand: systemBrand,
+        systemModel: systemModel,
+        gpsModel: gpsModel,
+        compassDegree: compassDegree,
+        observations: document.getElementById('observations').value.trim(),
+        modificationRequested: modificationRequested,
+        modificationDescription: modificationDescription,
         mapPoints: selectedMapPoints,
         fileName: selectedKmlFile.name
     };
@@ -1002,8 +1161,10 @@ document.getElementById('service-form').addEventListener('submit', (e) => {
         <li><strong>Talhão:</strong> ${escapeHtml(currentOrderData.fieldName)}</li>
         <li><strong>Operação:</strong> ${escapeHtml(currentOrderData.operationType)}</li>
         <li><strong>Largura:</strong> ${escapeHtml(currentOrderData.implementWidth)}m</li>
-        <li><strong>Monitor:</strong> ${escapeHtml(currentOrderData.gpsModel)}</li>
-        <li><strong>Pontos no mapa:</strong> 4 pontos marcados</li>
+        <li><strong>Sistema:</strong> ${escapeHtml(currentOrderData.gpsModel)}</li>
+        <li><strong>Ângulo:</strong> ${escapeHtml(currentOrderData.compassDegree)}°</li>
+        <li><strong>Pontos no mapa:</strong> ${selectedMapPoints.length} ponto(s)</li>
+        <li><strong>Modificação de arquivo:</strong> ${modificationRequested ? "Sim" : "Não"}</li>
     `;
 
     document.getElementById('terms-checkbox').checked = false;
@@ -1017,18 +1178,24 @@ document.getElementById('terms-checkbox').addEventListener('change', (e) => {
 });
 
 document.getElementById('btn-pay-pix').addEventListener('click', async () => {
+    if (!currentUser || !currentUserData) {
+        return alert("Faça login antes de enviar o pedido.");
+    }
+
     showLoading('Enviando pedido...');
 
     try {
-        const filePath = `orders_files/${currentUserData.cpf}/${new Date().getTime()}_${selectedKmlFile.name}`;
+        const filePath = `orders_files/${currentUser.uid}/${Date.now()}_${selectedKmlFile.name}`;
         const snapshot = await uploadBytes(ref(storage, filePath), selectedKmlFile);
         const fileUrl = await getDownloadURL(snapshot.ref);
 
         await addDoc(collection(db, "orders"), {
             ...currentOrderData,
+            userId: currentUser.uid,
             userCpf: currentUserData.cpf,
             userName: currentUserData.name,
             userWhatsapp: currentUserData.whatsapp,
+            userEmail: currentUserData.email,
             fileUrl: fileUrl,
             status: 'Aguardando valor',
             paymentConfirmed: false,
@@ -1042,11 +1209,15 @@ document.getElementById('btn-pay-pix').addEventListener('click', async () => {
         alert("Pedido enviado! Aguarde o administrador inserir o valor e a chave PIX.");
 
         document.getElementById('service-form').reset();
-        document.getElementById('gps-other-group').classList.add('hidden');
-        document.getElementById('gps-other-model').required = false;
-        clearMapPoints();
+        document.getElementById('system-other-group').classList.add('hidden');
+        document.getElementById('system-other-name').required = false;
+        document.getElementById('modification-description-group').classList.add('hidden');
+        document.getElementById('modification-description').required = false;
         selectedKmlFile = null;
-        document.getElementById('kml-filename').textContent = "Anexar Arquivo .KML ou .SHP (Zip) *";
+        compassDegree = 0;
+        updateCompassVisual();
+        clearMapPoints();
+        document.getElementById('kml-filename').textContent = "Anexar Arquivo KML/KMZ/SHP em ZIP *";
 
         setupProfileScreen();
         showScreen('profile-screen');
@@ -1059,103 +1230,75 @@ document.getElementById('btn-pay-pix').addEventListener('click', async () => {
 });
 
 // ==========================================
-// PAINEL ADMINISTRATIVO E SENHAS
+// PAINEL ADMINISTRATIVO
 // ==========================================
 
-const adminModal = document.getElementById('admin-login-modal');
 const adminSettingsModal = document.getElementById('admin-settings-modal');
 
 document.getElementById('btn-admin-panel').addEventListener('click', () => {
-    document.getElementById('admin-password-input').value = "";
-    adminModal.classList.remove('hidden');
-});
-
-document.getElementById('btn-cancel-admin-login').addEventListener('click', () => {
-    adminModal.classList.add('hidden');
-});
-
-async function getAdminPasswords() {
-    const docRef = doc(db, "settings", "admin");
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-        return docSnap.data();
+    if (!currentUserIsAdmin) {
+        return alert("Seu usuário não tem permissão de administrador.");
     }
 
-    await setDoc(docRef, {
-        senha1: "0000",
-        senha2: "0000"
-    });
-
-    return {
-        senha1: "0000",
-        senha2: "0000"
-    };
-}
-
-document.getElementById('btn-confirm-admin-login').addEventListener('click', async () => {
-    const inputPass = document.getElementById('admin-password-input').value;
-
-    showLoading('Autenticando...');
-
-    try {
-        const senhas = await getAdminPasswords();
-
-        if (inputPass === senhas.senha1 || inputPass === senhas.senha2) {
-            adminModal.classList.add('hidden');
-            showScreen('admin-screen');
-            loadAdminOrders();
-        } else {
-            alert("Senha incorreta!");
-        }
-    } catch (e) {
-        alert("Erro ao verificar senha.");
-    } finally {
-        hideLoading();
-    }
+    showScreen('admin-screen');
+    loadAdminOrders();
 });
 
 document.getElementById('btn-back-admin').addEventListener('click', () => {
-    showScreen('login-screen');
+    setupProfileScreen();
+    showScreen('profile-screen');
 });
 
-document.getElementById('btn-admin-settings').addEventListener('click', async () => {
-    showLoading('');
-
-    try {
-        const senhas = await getAdminPasswords();
-
-        document.getElementById('admin-pass-1').value = senhas.senha1;
-        document.getElementById('admin-pass-2').value = senhas.senha2;
-
-        adminSettingsModal.classList.remove('hidden');
-    } catch (e) {
-        console.error(e);
-    } finally {
-        hideLoading();
-    }
+document.getElementById('btn-admin-settings').addEventListener('click', () => {
+    adminSettingsModal.classList.remove('hidden');
 });
 
 document.getElementById('btn-cancel-admin-settings').addEventListener('click', () => {
     adminSettingsModal.classList.add('hidden');
 });
 
-document.getElementById('btn-save-admin-settings').addEventListener('click', async () => {
-    const s1 = document.getElementById('admin-pass-1').value;
-    const s2 = document.getElementById('admin-pass-2').value;
+document.getElementById('btn-make-admin').addEventListener('click', async () => {
+    const email = document.getElementById('new-admin-email').value.trim().toLowerCase();
 
-    showLoading('Salvando...');
+    if (!email) {
+        return alert("Informe o e-mail do usuário.");
+    }
+
+    const confirmacao = confirm(`Tornar ${email} um administrador?`);
+
+    if (!confirmacao) return;
+
+    showLoading('Liberando administrador...');
 
     try {
-        await setDoc(doc(db, "settings", "admin"), {
-            senha1: s1,
-            senha2: s2
-        });
+        const q = query(
+            collection(db, "users"),
+            where("email", "==", email)
+        );
 
-        alert("Senhas alteradas!");
-        adminSettingsModal.classList.add('hidden');
-    } catch (e) {
-        alert("Erro ao salvar.");
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            alert("Usuário não encontrado. Ele precisa criar uma conta normal primeiro.");
+            return;
+        }
+
+        const userDoc = querySnapshot.docs[0];
+        const userData = userDoc.data();
+
+        await setDoc(doc(db, "admins", userDoc.id), {
+            name: userData.name || "Administrador",
+            email: userData.email || email,
+            active: true,
+            createdAt: serverTimestamp(),
+            createdBy: currentUser.uid
+        }, { merge: true });
+
+        alert("Administrador liberado com sucesso!");
+        document.getElementById('new-admin-email').value = "";
+    } catch (error) {
+        console.error(error);
+        alert("Erro ao liberar administrador. Verifique as regras do Firestore.");
     } finally {
         hideLoading();
     }
@@ -1185,6 +1328,8 @@ document.getElementById('admin-banner-upload').addEventListener('change', (e) =>
 });
 
 document.getElementById('btn-save-global-banner').addEventListener('click', async () => {
+    if (!currentUserIsAdmin) return alert("Acesso negado.");
+
     if (!adminSelectedBanner) {
         return alert("Selecione um banner primeiro.");
     }
@@ -1193,7 +1338,7 @@ document.getElementById('btn-save-global-banner').addEventListener('click', asyn
 
     try {
         const snapshot = await uploadBytes(
-            ref(storage, `app_assets/global_banner_${new Date().getTime()}`),
+            ref(storage, `app_assets/global_banner_${Date.now()}`),
             adminSelectedBanner
         );
 
@@ -1208,6 +1353,7 @@ document.getElementById('btn-save-global-banner').addEventListener('click', asyn
         document.getElementById('app-global-banner').src = bannerUrl;
         document.getElementById('app-global-banner').classList.remove('hidden');
     } catch (error) {
+        console.error(error);
         alert("Erro ao salvar banner.");
     } finally {
         hideLoading();
@@ -1231,6 +1377,8 @@ document.getElementById('admin-logo-upload').addEventListener('change', (e) => {
 });
 
 document.getElementById('btn-save-global-logo').addEventListener('click', async () => {
+    if (!currentUserIsAdmin) return alert("Acesso negado.");
+
     if (!adminSelectedLogo) {
         return alert("Selecione uma logo primeiro.");
     }
@@ -1239,7 +1387,7 @@ document.getElementById('btn-save-global-logo').addEventListener('click', async 
 
     try {
         const snapshot = await uploadBytes(
-            ref(storage, `app_assets/global_logo_${new Date().getTime()}`),
+            ref(storage, `app_assets/global_logo_${Date.now()}`),
             adminSelectedLogo
         );
 
@@ -1252,8 +1400,8 @@ document.getElementById('btn-save-global-logo').addEventListener('click', async 
         alert("Logo principal atualizada!");
 
         document.getElementById('main-app-logo').src = logoUrl;
-        document.getElementById('main-app-logo-reg').src = logoUrl;
     } catch (error) {
+        console.error(error);
         alert("Erro ao salvar logo.");
     } finally {
         hideLoading();
@@ -1271,23 +1419,76 @@ function buildAdminOrderBaseHtml(order, orderId) {
         ? new Date(order.createdAt.toDate()).toLocaleDateString('pt-BR')
         : 'Recente';
 
+    const statusClass = getStatusClass(status, order.archived === true);
+    const statusText = getStatusText(status, order.archived === true);
+
     return `
-        <div class="order-card">
-            <p><strong>Data:</strong> ${dateStr}</p>
-            <p><strong>Status:</strong> ${escapeHtml(status)}</p>
-            <p><strong>Cliente:</strong> ${escapeHtml(order.userName || "Não informado")}</p>
-            <p><strong>WhatsApp:</strong> ${escapeHtml(order.userWhatsapp || "Não informado")}</p>
-            <p><strong>CPF:</strong> ${escapeHtml(order.userCpf || "Não informado")}</p>
-            <p><strong>Fazenda:</strong> ${escapeHtml(order.farmName || "Não informado")}</p>
-            <p><strong>Talhão:</strong> ${escapeHtml(order.fieldName || "Não informado")}</p>
-            <p><strong>Operação:</strong> ${escapeHtml(order.operationType || "Não informado")} (${escapeHtml(order.implementWidth || "0")}m)</p>
-            <p><strong>Monitor GNSS:</strong> ${escapeHtml(order.gpsModel || "Não informado")}</p>
-            <p><strong>Sentido:</strong> ${escapeHtml(order.compassDegree || "0")}°</p>
-            <p><strong>Observações:</strong> ${escapeHtml(order.observations || "Nenhuma")}</p>
-            ${buildMapPointsHtml(order.mapPoints)}
-            <p><strong>Valor:</strong> ${formatMoney(order.price)}</p>
-            <p><strong>Chave PIX:</strong> ${escapeHtml(order.pixKey || "Não informada")}</p>
-            ${order.fileUrl ? `<a href="${order.fileUrl}" target="_blank" class="btn-secondary">Baixar KML/SHP</a>` : ''}
+        <div class="admin-order-card">
+            <div class="order-card-header">
+                <div>
+                    <h4 class="order-title">${escapeHtml(order.fieldName || "Pedido sem talhão")}</h4>
+                    <p class="order-subtitle">${escapeHtml(order.farmName || "Fazenda não informada")} • ${dateStr}</p>
+                </div>
+                <span class="status-badge ${statusClass}">${escapeHtml(statusText)}</span>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-box">
+                    <span class="info-label">Cliente</span>
+                    <span class="info-value">${escapeHtml(order.userName || "Não informado")}</span>
+                </div>
+
+                <div class="info-box">
+                    <span class="info-label">WhatsApp</span>
+                    <span class="info-value">${escapeHtml(order.userWhatsapp || "Não informado")}</span>
+                </div>
+
+                <div class="info-box">
+                    <span class="info-label">E-mail</span>
+                    <span class="info-value">${escapeHtml(order.userEmail || "Não informado")}</span>
+                </div>
+
+                <div class="info-box">
+                    <span class="info-label">CPF</span>
+                    <span class="info-value">${escapeHtml(order.userCpf || "Não informado")}</span>
+                </div>
+
+                <div class="info-box">
+                    <span class="info-label">Valor</span>
+                    <span class="info-value">${formatMoney(order.price)}</span>
+                </div>
+
+                <div class="info-box">
+                    <span class="info-label">Operação</span>
+                    <span class="info-value">${escapeHtml(order.operationType || "Não informado")}</span>
+                </div>
+
+                <div class="info-box">
+                    <span class="info-label">Largura</span>
+                    <span class="info-value">${escapeHtml(order.implementWidth || "0")}m</span>
+                </div>
+
+                <div class="info-box">
+                    <span class="info-label">Sistema</span>
+                    <span class="info-value">${escapeHtml(order.gpsModel || "Não informado")}</span>
+                </div>
+            </div>
+
+            ${order.fileUrl ? `<a href="${order.fileUrl}" target="_blank" class="btn-secondary">Baixar Arquivo Anexado</a>` : ''}
+
+            <details class="admin-details">
+                <summary>Ver detalhes técnicos e pontos do mapa</summary>
+                <div style="margin-top: 10px;">
+                    <p><strong>Marca/Sistema:</strong> ${escapeHtml(order.systemBrand || "")}</p>
+                    <p><strong>Modelo/Formato:</strong> ${escapeHtml(order.systemModel || "")}</p>
+                    <p><strong>Ângulo da rosa dos ventos:</strong> ${escapeHtml(order.compassDegree || "0")}°</p>
+                    <p><strong>Demanda de modificação:</strong> ${order.modificationRequested ? "Sim" : "Não"}</p>
+                    ${order.modificationRequested ? `<p><strong>Descrição da modificação:</strong> ${escapeHtml(order.modificationDescription || "")}</p>` : ""}
+                    <p><strong>Observações:</strong> ${escapeHtml(order.observations || "Nenhuma")}</p>
+                    ${buildMapPointsHtml(order.mapPoints)}
+                </div>
+            </details>
+
             <input type="hidden" value="${escapeHtml(orderId)}">
     `;
 }
@@ -1369,30 +1570,38 @@ async function loadAdminOrders() {
 
                 pricingContainer.innerHTML += `
                     ${baseInfoHtml}
-                        <div style="margin-top: 15px;">
-                            <label>Valor do Pedido (R$)</label>
-                            <input 
-                                type="number" 
-                                step="0.01" 
-                                min="0" 
-                                class="form-control admin-price-input" 
-                                id="admin-price-${orderId}" 
-                                placeholder="Ex: 49.90"
-                                value="${order.price ? Number(order.price).toFixed(2) : ""}"
-                            >
+                        <div class="admin-action-box">
+                            <p style="font-weight: 800; color: var(--primary-dark); margin-bottom: 10px;">Definir cobrança do pedido</p>
 
-                            <label style="margin-top: 10px;">Chave PIX</label>
-                            <input 
-                                type="text" 
-                                class="form-control admin-pix-input" 
-                                id="admin-pix-${orderId}" 
-                                placeholder="Digite a chave PIX"
-                                value="${escapeHtml(order.pixKey || "")}"
-                            >
+                            <div class="admin-payment-form">
+                                <div>
+                                    <label>Valor do Pedido (R$)</label>
+                                    <input 
+                                        type="number" 
+                                        step="0.01" 
+                                        min="0" 
+                                        class="form-control admin-price-input" 
+                                        id="admin-price-${orderId}" 
+                                        placeholder="Ex: 49.90"
+                                        value="${order.price ? Number(order.price).toFixed(2) : ""}"
+                                    >
+                                </div>
 
-                            <button class="btn primary full-width btn-set-price-pix" data-id="${orderId}" style="margin-top: 10px;">
-                                Salvar Valor e Enviar Cobrança ao Cliente
-                            </button>
+                                <div>
+                                    <label>Chave PIX</label>
+                                    <input 
+                                        type="text" 
+                                        class="form-control admin-pix-input" 
+                                        id="admin-pix-${orderId}" 
+                                        placeholder="Digite a chave PIX"
+                                        value="${escapeHtml(order.pixKey || "")}"
+                                    >
+                                </div>
+
+                                <button class="btn primary full-width btn-set-price-pix full-row" data-id="${orderId}">
+                                    Salvar Valor e Enviar Cobrança ao Cliente
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1404,7 +1613,7 @@ async function loadAdminOrders() {
 
                 pendingContainer.innerHTML += `
                     ${baseInfoHtml}
-                        <div style="margin-top: 15px;">
+                        <div class="admin-action-box">
                             <p><strong>Situação:</strong> ${
                                 status === "Pagamento informado"
                                     ? "Cliente informou que já pagou."
@@ -1427,7 +1636,7 @@ async function loadAdminOrders() {
                     ${baseInfoHtml}
                         <a href="${zapLink}" target="_blank" class="btn-secondary">Avisar Cliente</a>
 
-                        <div style="margin-top: 15px;">
+                        <div class="admin-action-box">
                             <label>Anexar Arquivo Final (ZIP/PDF/KML/KMZ):</label>
                             <input 
                                 type="file" 
@@ -1438,7 +1647,7 @@ async function loadAdminOrders() {
                             <button 
                                 class="btn primary full-width btn-complete-order" 
                                 data-id="${orderId}" 
-                                data-cpf="${escapeHtml(order.userCpf || "")}">
+                                data-userid="${escapeHtml(order.userId || "")}">
                                 Concluir e Enviar para Cliente
                             </button>
                         </div>
@@ -1462,25 +1671,11 @@ async function loadAdminOrders() {
             }
         });
 
-        if (!hasPricing) {
-            pricingContainer.innerHTML = "<p>Nenhum pedido aguardando valor.</p>";
-        }
-
-        if (!hasPending) {
-            pendingContainer.innerHTML = "<p>Nenhum pagamento aguardando confirmação.</p>";
-        }
-
-        if (!hasQueue) {
-            queueContainer.innerHTML = "<p>Nenhum pedido na fila.</p>";
-        }
-
-        if (!hasCompleted) {
-            completedContainer.innerHTML = "<p>Nenhum pedido concluído.</p>";
-        }
-
-        if (!hasArchived) {
-            archivedContainer.innerHTML = "<p>Nenhum pedido arquivado.</p>";
-        }
+        if (!hasPricing) pricingContainer.innerHTML = "<p>Nenhum pedido aguardando valor.</p>";
+        if (!hasPending) pendingContainer.innerHTML = "<p>Nenhum pagamento aguardando confirmação.</p>";
+        if (!hasQueue) queueContainer.innerHTML = "<p>Nenhum pedido na fila.</p>";
+        if (!hasCompleted) completedContainer.innerHTML = "<p>Nenhum pedido concluído.</p>";
+        if (!hasArchived) archivedContainer.innerHTML = "<p>Nenhum pedido arquivado.</p>";
 
     } catch (error) {
         console.error(error);
@@ -1537,9 +1732,7 @@ document.getElementById('admin-pending-payments-container').addEventListener('cl
 
         const confirmacao = confirm("Confirmar pagamento deste pedido e enviar para a fila?");
 
-        if (!confirmacao) {
-            return;
-        }
+        if (!confirmacao) return;
 
         showLoading('Confirmando pagamento...');
 
@@ -1564,7 +1757,7 @@ document.getElementById('admin-pending-payments-container').addEventListener('cl
 document.getElementById('admin-orders-container').addEventListener('click', async (e) => {
     if (e.target.classList.contains('btn-complete-order')) {
         const orderId = e.target.getAttribute('data-id');
-        const userCpf = e.target.getAttribute('data-cpf');
+        const userId = e.target.getAttribute('data-userid');
 
         const fileInput = document.getElementById(`upload-final-${orderId}`);
         const file = fileInput.files[0];
@@ -1576,7 +1769,7 @@ document.getElementById('admin-orders-container').addEventListener('click', asyn
         showLoading('Enviando Arquivo Final...');
 
         try {
-            const filePath = `completed_orders/${userCpf}/${new Date().getTime()}_${file.name}`;
+            const filePath = `completed_orders/${userId}/${Date.now()}_${file.name}`;
             const snapshot = await uploadBytes(ref(storage, filePath), file);
             const finalFileUrl = await getDownloadURL(snapshot.ref);
 
@@ -1604,9 +1797,7 @@ document.getElementById('admin-completed-container').addEventListener('click', a
 
         const confirmacao = confirm("Arquivar este pedido concluído?");
 
-        if (!confirmacao) {
-            return;
-        }
+        if (!confirmacao) return;
 
         showLoading('Arquivando pedido...');
 
@@ -1664,9 +1855,7 @@ if ('serviceWorker' in navigator) {
     let refreshing;
 
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (refreshing) {
-            return;
-        }
+        if (refreshing) return;
 
         refreshing = true;
         window.location.reload();

@@ -25,49 +25,122 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
-
     <style>
+        .contact-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 22px;
+        }
+
+        .contact-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 12px;
+            border-radius: 999px;
+            background: #ffffff;
+            border: 1px solid #E0E0E0;
+            color: #1B5E20;
+            font-weight: 700;
+            text-decoration: none;
+            font-size: 0.86rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .small-link {
+            display: inline-block;
+            margin-top: 12px;
+            color: var(--primary-dark);
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            text-decoration: underline;
+        }
+
+        .profile-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin: 18px 0;
+        }
+
+        .action-card {
+            background: #ffffff;
+            border: 1px solid #E0E0E0;
+            border-radius: 14px;
+            padding: 14px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+        }
+
+        .action-card h3 {
+            margin: 0 0 8px;
+            color: var(--primary-dark);
+        }
+
+        .action-card p {
+            margin: 0 0 12px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .instruction-list {
+            margin: 10px 0 0 18px;
+            color: #37474F;
+            font-size: 0.92rem;
+        }
+
         .orders-list {
             display: flex;
             flex-direction: column;
             gap: 14px;
         }
 
-        .user-order-card {
+        .user-order-card,
+        .admin-order-card {
             background: #ffffff;
             border: 1px solid #E0E0E0;
-            border-radius: 14px;
-            padding: 14px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.07);
         }
 
-        .user-order-header {
+        .admin-order-card {
+            border-left: 5px solid var(--primary-color);
+            margin-bottom: 18px;
+        }
+
+        .order-card-header {
             display: flex;
             justify-content: space-between;
-            gap: 10px;
+            gap: 12px;
             align-items: flex-start;
-            margin-bottom: 10px;
+            border-bottom: 1px solid #EEEEEE;
+            padding-bottom: 12px;
+            margin-bottom: 12px;
         }
 
-        .user-order-title {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--primary-dark);
+        .order-title {
             margin: 0;
+            color: var(--primary-dark);
+            font-size: 1.08rem;
+            font-weight: 800;
         }
 
-        .user-order-subtitle {
-            font-size: 0.85rem;
-            color: var(--text-muted);
+        .order-subtitle {
             margin: 4px 0 0;
+            color: var(--text-muted);
+            font-size: 0.86rem;
         }
 
         .status-badge {
             display: inline-block;
-            padding: 6px 9px;
+            padding: 7px 10px;
             border-radius: 999px;
-            font-size: 0.75rem;
-            font-weight: 700;
+            font-size: 0.76rem;
+            font-weight: 800;
             white-space: nowrap;
         }
 
@@ -101,40 +174,40 @@
             color: #6A1B9A;
         }
 
-        .order-info-grid {
+        .info-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 8px;
+            gap: 10px;
             margin: 12px 0;
         }
 
-        .order-info-item {
+        .info-box {
             background: #F7F9F7;
-            border-radius: 10px;
-            padding: 9px;
+            border-radius: 12px;
+            padding: 10px;
         }
 
-        .order-info-label {
+        .info-label {
             display: block;
-            font-size: 0.72rem;
             color: var(--text-muted);
-            margin-bottom: 3px;
+            font-size: 0.73rem;
+            margin-bottom: 4px;
         }
 
-        .order-info-value {
+        .info-value {
             display: block;
-            font-size: 0.9rem;
-            font-weight: 700;
             color: #263238;
+            font-weight: 800;
             word-break: break-word;
         }
 
-        .payment-box {
+        .payment-box,
+        .admin-action-box {
             background: #F1F8E9;
             border: 1px solid #C8E6C9;
-            border-radius: 12px;
-            padding: 12px;
-            margin-top: 12px;
+            border-radius: 14px;
+            padding: 14px;
+            margin-top: 14px;
         }
 
         .payment-box.warning {
@@ -150,24 +223,119 @@
         .pix-key-box {
             background: #FFFFFF;
             border: 1px dashed #9E9E9E;
-            border-radius: 8px;
-            padding: 8px;
+            border-radius: 9px;
+            padding: 9px;
             margin: 8px 0;
-            font-size: 0.88rem;
+            font-size: 0.9rem;
             word-break: break-word;
         }
 
-        .order-details {
+        details.order-details,
+        details.admin-details {
             margin-top: 12px;
             border-top: 1px solid #EEEEEE;
             padding-top: 10px;
         }
 
-        .order-details summary {
+        details.order-details summary,
+        details.admin-details summary {
             cursor: pointer;
             color: var(--primary-dark);
-            font-weight: 700;
+            font-weight: 800;
             user-select: none;
+        }
+
+        .map-layer-hint {
+            background: #E8F5E9;
+            color: #1B5E20;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 0.86rem;
+            margin-bottom: 10px;
+        }
+
+        .map-wrapper {
+            position: relative;
+            width: 100%;
+            height: 360px;
+            border-radius: var(--border-radius);
+            border: 1px solid #ddd;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        #reference-map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .compass-overlay {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 150px;
+            height: 150px;
+            transform: translate(-50%, -50%) rotate(0deg);
+            z-index: 800;
+            border: 2px solid rgba(46, 125, 50, 0.75);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.35);
+            backdrop-filter: blur(2px);
+            cursor: grab;
+            user-select: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+        }
+
+        .compass-overlay:active {
+            cursor: grabbing;
+        }
+
+        .compass-arrow-visual {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            width: 0;
+            height: 0;
+            transform: translateX(-50%);
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-bottom: 52px solid rgba(211, 47, 47, 0.82);
+        }
+
+        .compass-center {
+            width: 18px;
+            height: 18px;
+            background: rgba(46, 125, 50, 0.95);
+            border-radius: 50%;
+            z-index: 2;
+        }
+
+        .compass-letter {
+            position: absolute;
+            font-weight: 900;
+            color: #1B5E20;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.9);
+        }
+
+        .compass-n { top: 4px; left: 50%; transform: translateX(-50%); }
+        .compass-s { bottom: 4px; left: 50%; transform: translateX(-50%) rotate(180deg); }
+        .compass-e { right: 8px; top: 50%; transform: translateY(-50%) rotate(-90deg); }
+        .compass-w { left: 8px; top: 50%; transform: translateY(-50%) rotate(90deg); }
+
+        .compass-angle-box {
+            position: absolute;
+            left: 12px;
+            bottom: 12px;
+            z-index: 801;
+            background: rgba(255,255,255,0.92);
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-weight: 800;
+            color: var(--primary-dark);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
 
         .map-points-list {
@@ -175,27 +343,50 @@
             font-size: 0.86rem;
         }
 
-        .map-layer-hint {
-            background: #E8F5E9;
-            color: #1B5E20;
-            padding: 9px;
-            border-radius: 10px;
-            font-size: 0.85rem;
-            margin-bottom: 10px;
+        .admin-payment-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            align-items: end;
         }
 
-        @media (max-width: 480px) {
-            .order-info-grid {
+        .admin-payment-form .full-row {
+            grid-column: 1 / -1;
+        }
+
+        .supported-systems-box {
+            background: #F7F9F7;
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+
+        .hidden-by-state {
+            display: none !important;
+        }
+
+        @media (max-width: 640px) {
+            .profile-actions-grid,
+            .info-grid,
+            .admin-payment-form {
                 grid-template-columns: 1fr;
             }
 
-            .user-order-header {
+            .order-card-header {
                 flex-direction: column;
-                align-items: flex-start;
+            }
+
+            .map-wrapper {
+                height: 330px;
+            }
+
+            .compass-overlay {
+                width: 130px;
+                height: 130px;
             }
         }
     </style>
-
 </head>
 
 <body>
@@ -220,51 +411,99 @@
             <p>Linhas de Piloto Automático On-Demand</p>
         </div>
 
-        <div class="card" style="width: 100%; max-width: 400px; margin: 0 auto;">
+        <div class="card" style="width: 100%; max-width: 420px; margin: 0 auto;">
 
-            <h3 class="section-title text-center">Acesso ao Sistema</h3>
+            <h3 class="section-title text-center">Entrar no Sistema</h3>
 
             <form id="login-form">
 
                 <div class="form-group">
-                    <label for="login-cpf">CPF *</label>
-                    <input type="text" id="login-cpf" class="form-control" placeholder="000.000.000-00" required maxlength="14">
+                    <label for="login-email">E-mail *</label>
+                    <input type="email" id="login-email" class="form-control" placeholder="seuemail@email.com" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="login-dob">Data de Nascimento *</label>
-                    <input type="text" id="login-dob" class="form-control" placeholder="DD/MM/AAAA" inputmode="numeric" maxlength="10" required>
+                    <label for="login-password">Senha *</label>
+                    <input type="password" id="login-password" class="form-control" placeholder="Digite sua senha" required>
                 </div>
 
-                <button type="submit" class="btn primary full-width mt-15">Entrar no App ➔</button>
+                <button type="submit" class="btn primary full-width mt-15">Entrar ➔</button>
 
             </form>
 
+            <button id="btn-go-create-account" class="small-link">Criar conta</button>
+
         </div>
 
-        <button id="btn-admin-panel" class="btn-text" style="color: var(--text-muted); margin-top: 25px; font-size: 0.9rem;">⚙️ Acesso Administrativo</button>
+        <div class="contact-row">
+            <a class="contact-chip" href="https://wa.me/5564992422227" target="_blank">💬 WhatsApp</a>
+            <a class="contact-chip" href="https://www.instagram.com/up_agritechnology?igsh=MW1seWhjMmp0eWQzZA==" target="_blank">📷 Instagram</a>
+            <a class="contact-chip" href="mailto:atendimento@upagritechnology.com.br">✉️ E-mail</a>
+        </div>
 
     </div>
 
-    <div id="register-screen" class="screen">
+    <div id="create-account-screen" class="screen">
 
         <div class="logo-container" style="margin-top: 20px; margin-bottom: 20px;">
-            <img id="main-app-logo-reg" src="icon-192x192.png" alt="Logo UP AGRO" style="width: 100px; border-radius: 12px;">
+            <img src="icon-192x192.png" alt="Logo UP AGRO" style="width: 100px; border-radius: 12px;">
         </div>
 
-        <div class="card" style="width: 100%; max-width: 400px; margin: 0 auto;">
+        <div class="card" style="width: 100%; max-width: 420px; margin: 0 auto;">
+
+            <h3 class="section-title">Criar Conta</h3>
+
+            <p style="margin-bottom: 18px; font-size: 0.9rem; color: var(--text-muted);">
+                Primeiro crie seu acesso com e-mail e senha. Em seguida, complete seu cadastro.
+            </p>
+
+            <form id="create-account-form">
+
+                <div class="form-group">
+                    <label for="create-email">E-mail *</label>
+                    <input type="email" id="create-email" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="create-password">Senha *</label>
+                    <input type="password" id="create-password" class="form-control" minlength="6" required>
+                </div>
+
+                <button type="submit" class="btn success full-width mt-15">Criar acesso</button>
+
+            </form>
+
+            <button id="btn-back-login-create" class="small-link">Voltar para login</button>
+
+        </div>
+
+    </div>
+
+    <div id="complete-profile-screen" class="screen">
+
+        <div class="logo-container" style="margin-top: 20px; margin-bottom: 20px;">
+            <img src="icon-192x192.png" alt="Logo UP AGRO" style="width: 100px; border-radius: 12px;">
+        </div>
+
+        <div class="card" style="width: 100%; max-width: 420px; margin: 0 auto;">
 
             <h3 class="section-title">Completar Cadastro</h3>
 
-            <p style="margin-bottom: 20px; font-size: 0.9rem; color: var(--text-muted);">
-                Parece que é seu primeiro acesso. Precisamos de mais alguns dados para gerar seus relatórios.
-            </p>
-
-            <form id="register-form">
+            <form id="complete-profile-form">
 
                 <div class="form-group">
                     <label for="reg-name">Nome Completo *</label>
-                    <input type="text" id="reg-name" class="form-control" placeholder="Ex: João da Silva" required>
+                    <input type="text" id="reg-name" class="form-control" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="reg-cpf">CPF *</label>
+                    <input type="text" id="reg-cpf" class="form-control" placeholder="000.000.000-00" maxlength="14" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="reg-dob">Data de Nascimento *</label>
+                    <input type="text" id="reg-dob" class="form-control" placeholder="DD/MM/AAAA" inputmode="numeric" maxlength="10" required>
                 </div>
 
                 <div class="form-group">
@@ -272,7 +511,7 @@
                     <input type="text" id="reg-whatsapp" class="form-control" placeholder="(00) 00000-0000" required maxlength="15">
                 </div>
 
-                <button type="submit" class="btn success full-width mt-15">Salvar e Entrar</button>
+                <button type="submit" class="btn success full-width mt-15">Salvar cadastro</button>
 
             </form>
 
@@ -298,8 +537,45 @@
 
                 <p id="user-phone"></p>
 
+                <p id="user-email" style="font-size: 0.85rem; color: var(--text-muted);"></p>
+
                 <p id="user-cpf" style="font-size: 0.8rem; color: var(--text-muted);"></p>
             </div>
+
+            <div class="card">
+                <h3 class="section-title">Como usar</h3>
+                <p style="color: var(--text-muted); font-size: 0.92rem;">
+                    Antes de fazer seu primeiro pedido, siga estas orientações rápidas:
+                </p>
+                <ol class="instruction-list">
+                    <li>Anexe o arquivo da área/talhão em KML, KMZ ou ZIP.</li>
+                    <li>Escolha o sistema/monitor agrícola correspondente.</li>
+                    <li>Marque no mapa de 1 até 12 pontos de referência.</li>
+                    <li>Gire a rosa dos ventos para indicar o sentido desejado das linhas.</li>
+                    <li>Aguarde o orçamento aparecer em “Meus Pedidos”.</li>
+                    <li>Após pagar via PIX, informe o pagamento pelo app.</li>
+                </ol>
+
+                <a href="manual_up_agro_instrucoes.pdf" target="_blank" class="btn secondary full-width" style="margin-top: 15px;">
+                    Ver manual completo em PDF
+                </a>
+            </div>
+
+            <div class="profile-actions-grid">
+                <div class="action-card">
+                    <h3>Novo Pedido</h3>
+                    <p>Solicite linhas de piloto automático com mapa, pontos e arquivo da área.</p>
+                    <button id="btn-next-step" class="btn success full-width">Nova Solicitação</button>
+                </div>
+
+                <div class="action-card">
+                    <h3>Aerofoto / Levantamento</h3>
+                    <p>Solicite orçamento para aerofoto ou levantamento da área.</p>
+                    <a id="btn-aerofoto-email" class="btn primary full-width" href="mailto:atendimento@upagritechnology.com.br?subject=Orçamento%20para%20aerofoto%20e%20levantamento">Solicitar por E-mail</a>
+                </div>
+            </div>
+
+            <button id="btn-admin-panel" class="btn secondary full-width hidden-by-state" style="margin-bottom: 18px;">⚙️ Acessar Painel ADM</button>
 
             <div class="card white-label-section">
 
@@ -334,8 +610,6 @@
                 </div>
 
             </div>
-
-            <button id="btn-next-step" class="btn success full-width">Nova Solicitação de Serviço ➔</button>
 
             <div class="card" style="margin-top: 20px;">
                 <h3 class="section-title">Meus Pedidos</h3>
@@ -377,35 +651,49 @@
 
                 <hr class="divider">
 
-                <h3 class="section-title">2. Geometria da Área</h3>
+                <h3 class="section-title">2. Arquivo e Pontos de Referência</h3>
 
                 <div class="form-group">
                     <label for="kml-upload" class="upload-label file-upload-label">
-                        <span id="kml-filename">Anexar Arquivo .KML ou .SHP (Zip) *</span>
-                        <input type="file" id="kml-upload" accept=".kml,.zip" required>
+                        <span id="kml-filename">Anexar Arquivo KML/KMZ/SHP em ZIP *</span>
+                        <input type="file" id="kml-upload" accept=".kml,.kmz,.zip" required>
                     </label>
                 </div>
 
-
                 <div class="form-group">
-                    <label>Marque 4 pontos de referência no mapa *</label>
+                    <label>Marque os pontos de referência no mapa *</label>
                     <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">
-                        Clique ou toque no mapa para marcar os 4 cantos/pontos principais da área. Isso ajuda o administrador a localizar melhor o talhão.
+                        Você pode marcar de 1 até 12 pontos. Caso queira que a equipe interprete pelo arquivo enviado, marque apenas 1 ponto no meio do talhão.
                     </p>
 
                     <div id="map-points-status" style="font-weight: bold; color: var(--primary-dark); margin-bottom: 10px;">
-                        0 de 4 pontos marcados
+                        0 de 12 pontos marcados
                     </div>
 
                     <div class="map-layer-hint">
-                        No canto superior direito do mapa, você pode alternar entre mapa normal, satélite e relevo/topográfico.
+                        No canto superior direito do mapa, você pode alternar entre satélite, mapa normal e relevo/topográfico.
                     </div>
 
                     <button type="button" id="btn-current-location" class="btn primary full-width" style="margin-bottom: 10px;">
                         📍 Usar minha localização atual
                     </button>
 
-                    <div id="reference-map" style="height: 320px; width: 100%; border-radius: var(--border-radius); border: 1px solid #ddd; overflow: hidden; margin-bottom: 10px;"></div>
+                    <div class="map-wrapper">
+                        <div id="reference-map"></div>
+
+                        <div id="compass-overlay" class="compass-overlay" title="Arraste para girar a rosa dos ventos">
+                            <div class="compass-arrow-visual"></div>
+                            <span class="compass-letter compass-n">N</span>
+                            <span class="compass-letter compass-s">S</span>
+                            <span class="compass-letter compass-e">L</span>
+                            <span class="compass-letter compass-w">O</span>
+                            <div class="compass-center"></div>
+                        </div>
+
+                        <div class="compass-angle-box">
+                            Ângulo: <span id="compass-value">0°</span>
+                        </div>
+                    </div>
 
                     <button type="button" id="btn-clear-map-points" class="btn secondary full-width">
                         Limpar Pontos do Mapa
@@ -424,6 +712,7 @@
                         <option value="Pulverizacao">Linhas de Pulverização</option>
                         <option value="Colheita">Linhas de Colheita</option>
                         <option value="Preparo">Preparo de Solo</option>
+                        <option value="Outro">Outro</option>
                     </select>
                 </div>
 
@@ -433,30 +722,47 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Marca/Modelo do Monitor GNSS *</label>
-                    <select id="gps-model" class="form-control" required>
+                    <label>Sistema / Marca do Monitor *</label>
+                    <select id="system-brand" class="form-control" required>
                         <option value="">Selecione...</option>
-                        <option value="John Deere">John Deere</option>
-                        <option value="Trimble">Trimble</option>
+                        <option value="Monitores ISO11783">Monitores ISO11783</option>
+                        <option value="Fendt">Fendt</option>
                         <option value="Topcon">Topcon</option>
-                        <option value="Case/New Holland">Case / New Holland</option>
-                        <option value="Outro">Outro</option>
+                        <option value="Stara">Stara</option>
+                        <option value="CNH Industrial">CNH Industrial</option>
+                        <option value="Trimble">Trimble</option>
+                        <option value="John Deere">John Deere</option>
+                        <option value="Outro sistema">Outro sistema</option>
                     </select>
                 </div>
 
-                <div class="form-group hidden" id="gps-other-group">
-                    <label>Informe o modelo do monitor *</label>
-                    <input type="text" id="gps-other-model" class="form-control" placeholder="Ex: Raven, Agres, Hexagon, Fendt...">
+                <div class="form-group" id="system-model-group">
+                    <label>Modelo / Formato *</label>
+                    <select id="system-model" class="form-control" required>
+                        <option value="">Selecione primeiro a marca/sistema...</option>
+                    </select>
                 </div>
 
-                <div class="form-group compass-group">
-                    <label>Sentido Sugerido (Graus): <span id="compass-value">0°</span></label>
+                <div class="form-group hidden" id="system-other-group">
+                    <label>Informe o nome do sistema *</label>
+                    <input type="text" id="system-other-name" class="form-control" placeholder="Ex: Raven, Agres, Hexagon...">
+                </div>
 
-                    <div class="compass-container">
-                        <div id="compass-arrow" class="compass-arrow">⬆</div>
-                    </div>
+                <div class="supported-systems-box">
+                    <strong>Sistemas atendidos:</strong><br>
+                    ISO11783 TaskData, Fendt Shapefile, Topcon Shapefile, Stara Dados, CNH .CN1/Shapefile, Trimble AgGPS/AgData, John Deere GS2 1800/GS3 2630/GEN4 4600.
+                </div>
 
-                    <input type="range" id="compass-slider" class="form-control range-slider" min="0" max="359" value="0">
+                <div class="form-group" style="margin-top: 15px;">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="modification-requested" class="large-checkbox">
+                        <span>Também preciso de demanda de modificação de arquivo</span>
+                    </label>
+                </div>
+
+                <div class="form-group hidden" id="modification-description-group">
+                    <label>Descreva a modificação desejada</label>
+                    <textarea id="modification-description" class="form-control" rows="3" placeholder="Ex: corrigir borda, converter arquivo, ajustar linhas, revisar talhão..."></textarea>
                 </div>
 
                 <div class="form-group">
@@ -501,7 +807,7 @@
 
                 <h3 class="section-title" style="color: #D84315;">⚠ Termo de Responsabilidade</h3>
 
-                <p>Compreendo que a precisão das linhas geradas depende exclusivamente da qualidade do arquivo enviado e das medidas inseridas.</p>
+                <p>Compreendo que a precisão das linhas geradas depende da qualidade do arquivo enviado, dos pontos de referência e das medidas informadas.</p>
 
                 <label class="checkbox-label mt-15">
                     <input type="checkbox" id="terms-checkbox" class="large-checkbox">
@@ -521,12 +827,29 @@
     <div id="admin-screen" class="screen">
 
         <header class="app-header" style="background-color: #1B5E20;">
-            <button id="btn-back-admin" class="btn-text">⬅ Sair do Painel</button>
+            <button id="btn-back-admin" class="btn-text">⬅ Voltar</button>
             <h2>Painel Adm</h2>
             <button id="btn-admin-settings" class="btn-text">⚙️ Configurações</button>
         </header>
 
         <main class="content">
+
+            <div class="card" style="margin-bottom: 25px; border-left: 5px solid var(--secondary-color);">
+
+                <h3 class="section-title">Gerenciar Administradores</h3>
+
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px;">
+                    Função temporária: primeiro a pessoa cria uma conta normal no app. Depois você digita o e-mail dela aqui para liberar acesso ADM.
+                </p>
+
+                <div class="form-group">
+                    <label>E-mail do usuário que será ADM</label>
+                    <input type="email" id="new-admin-email" class="form-control" placeholder="email@exemplo.com">
+                </div>
+
+                <button id="btn-make-admin" class="btn primary full-width">Tornar usuário existente em ADM</button>
+
+            </div>
 
             <div class="card" style="margin-bottom: 25px; border-left: 5px solid var(--secondary-color);">
 
@@ -592,47 +915,17 @@
 
     </div>
 
-    <div id="admin-login-modal" class="modal hidden">
-
-        <div class="modal-content card">
-
-            <h3 class="section-title">Acesso Restrito</h3>
-
-            <p style="font-size: 0.9rem; margin-bottom: 15px; color: var(--text-muted);">
-                Digite uma das senhas de administrador para acessar.
-            </p>
-
-            <input type="password" id="admin-password-input" class="form-control" placeholder="Senha">
-
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button id="btn-cancel-admin-login" class="btn secondary full-width">Cancelar</button>
-                <button id="btn-confirm-admin-login" class="btn primary full-width">Entrar</button>
-            </div>
-
-        </div>
-
-    </div>
-
     <div id="admin-settings-modal" class="modal hidden">
 
         <div class="modal-content card">
 
-            <h3 class="section-title">Alterar Senhas do Painel</h3>
+            <h3 class="section-title">Informações</h3>
 
-            <div class="form-group">
-                <label>Senha 1</label>
-                <input type="text" id="admin-pass-1" class="form-control">
-            </div>
+            <p style="font-size: 0.9rem; margin-bottom: 15px; color: var(--text-muted);">
+                O painel ADM agora usa Firebase Authentication. Para remover a função temporária de criar ADM, atualize o código depois que todos os administradores estiverem cadastrados.
+            </p>
 
-            <div class="form-group">
-                <label>Senha 2</label>
-                <input type="text" id="admin-pass-2" class="form-control">
-            </div>
-
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button id="btn-cancel-admin-settings" class="btn secondary full-width">Cancelar</button>
-                <button id="btn-save-admin-settings" class="btn success full-width">Salvar</button>
-            </div>
+            <button id="btn-cancel-admin-settings" class="btn primary full-width">Fechar</button>
 
         </div>
 
@@ -642,10 +935,9 @@
         <h2 style="color: var(--primary-color);">Processando...</h2>
     </div>
 
-
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script type="module" src="app.js?v=restore-20260605"></script>
+    <script type="module" src="app.js?v=auth-20260605"></script>
 
 </body>
 

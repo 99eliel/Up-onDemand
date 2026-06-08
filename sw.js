@@ -1,11 +1,12 @@
-const CACHE_NAME = 'upagro-cache-restore-20260605';
+const CACHE_NAME = 'upagro-cache-auth-20260605';
 
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
     './app.js',
-    './manifest.json'
+    './manifest.json',
+    './manual_up_agro_instrucoes.pdf'
 ];
 
 self.addEventListener('install', (event) => {
