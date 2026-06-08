@@ -61,6 +61,7 @@ let currentLocationMarker = null;
 let selectedMapPoints = [];
 let compassDegree = 0;
 let isDraggingCompass = false;
+let adminReportsCache = null;
 
 const MAX_MAP_POINTS = 12;
 
@@ -300,6 +301,8 @@ onAuthStateChanged(auth, async (user) => {
             currentUserData = userDoc.data();
             currentUserData.uid = user.uid;
 
+            await trackUserVisit();
+
             const adminDoc = await getDoc(doc(db, "admins", user.uid));
             currentUserIsAdmin = adminDoc.exists() && adminDoc.data().active !== false;
 
@@ -409,6 +412,21 @@ document.getElementById('btn-logout').addEventListener('click', async () => {
     document.getElementById('login-form').reset();
     showScreen('login-screen');
 });
+
+
+async function trackUserVisit() {
+    if (!currentUser) return;
+
+    try {
+        await setDoc(doc(db, "users", currentUser.uid), {
+            lastVisitAt: serverTimestamp(),
+            lastVisitUserAgent: navigator.userAgent || "",
+            lastVisitPage: window.location.href || ""
+        }, { merge: true });
+    } catch (error) {
+        console.warn("Não foi possível registrar acesso do usuário:", error);
+    }
+}
 
 // ==========================================
 // PERFIL, WHITE LABEL E PEDIDOS DO CLIENTE
@@ -1516,6 +1534,439 @@ document.getElementById('btn-make-admin').addEventListener('click', async () => 
     } finally {
         hideLoading();
     }
+});
+
+
+// ==========================================
+// RELATÓRIOS ADMINISTRATIVOS
+// ==========================================
+
+function timestampToDate(value) {
+    if (!value) return null;
+
+    if (typeof value.toDate === "function") {
+        return value.toDate();
+    }
+
+    if (value instanceof Date) {
+        return value;
+    }
+
+    const parsed = new Date(value);
+
+    if (!Number.isNaN(parsed.getTime())) {
+        return parsed;
+    }
+
+    return null;
+}
+
+function formatDateTime(value) {
+    const date = timestampToDate(value);
+
+    if (!date) {
+        return "—";
+    }
+
+    return date.toLocaleString('pt-BR');
+}
+
+function isDateWithinLastDays(value, days) {
+    const date = timestampToDate(value);
+
+    if (!date) {
+        return false;
+    }
+
+    const now = new Date();
+    const limit = new Date(now.getTime() - (days * 24 * 60 * 60 * 1000));
+
+    return date >= limit;
+}
+
+function normalizeCsvValue(value) {
+    if (value === null || value === undefined) {
+        return "";
+    }
+
+    if (typeof value?.toDate === "function") {
+        return value.toDate().toLocaleString('pt-BR');
+    }
+
+    if (Array.isArray(value)) {
+        return JSON.stringify(value);
+    }
+
+    if (typeof value === "object") {
+        return JSON.stringify(value);
+    }
+
+    return String(value).replaceAll('"', '""');
+}
+
+function downloadCsv(filename, rows) {
+    if (!rows || rows.length === 0) {
+        alert("Não há dados para exportar.");
+        return;
+    }
+
+    const headers = Object.keys(rows[0]);
+
+    const csv = [
+        headers.join(";"),
+        ...rows.map(row => headers.map(header => `"${normalizeCsvValue(row[header])}"`).join(";"))
+    ].join("\n");
+
+    const blob = new Blob(["\ufeff" + csv], {
+        type: "text/csv;charset=utf-8;"
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+function buildReportTable(title, rows, columns, emptyText = "Nenhum registro encontrado.") {
+    if (!rows || rows.length === 0) {
+        return `
+            <div class="report-section-box">
+                <h4>${escapeHtml(title)}</h4>
+                <p class="report-empty">${escapeHtml(emptyText)}</p>
+            </div>
+        `;
+    }
+
+    const head = columns.map(col => `<th>${escapeHtml(col.label)}</th>`).join("");
+
+    const body = rows.slice(0, 10).map(row => {
+        return `<tr>${columns.map(col => `<td>${escapeHtml(col.render ? col.render(row) : row[col.key] || "—")}</td>`).join("")}</tr>`;
+    }).join("");
+
+    const extra = rows.length > 10
+        ? `<p style="margin-top: 8px; color: #6D5B25; font-weight: 800;">Mostrando 10 de ${rows.length} registros. Baixe o CSV para ver tudo.</p>`
+        : "";
+
+    return `
+        <div class="report-section-box">
+            <h4>${escapeHtml(title)}</h4>
+            <div class="report-table-wrapper">
+                <table class="report-table">
+                    <thead><tr>${head}</tr></thead>
+                    <tbody>${body}</tbody>
+                </table>
+            </div>
+            ${extra}
+        </div>
+    `;
+}
+
+function mapUsersForCsv(users) {
+    return users.map(user => ({
+        id: user.id,
+        nome: user.name || "",
+        email: user.email || "",
+        cpf: user.cpf || "",
+        whatsapp: user.whatsapp || "",
+        criado_em: formatDateTime(user.createdAt),
+        ultimo_acesso: formatDateTime(user.lastVisitAt),
+        white_label: user.whiteLabelActive ? "Sim" : "Não"
+    }));
+}
+
+function mapOrdersForCsv(orders) {
+    return orders.map(order => ({
+        id: order.id,
+        cliente: order.userName || "",
+        email: order.userEmail || "",
+        cpf: order.userCpf || "",
+        whatsapp: order.userWhatsapp || "",
+        fazenda: order.farmName || "",
+        talhao: order.fieldName || "",
+        status: order.status || "",
+        valor: order.price || "",
+        pix: order.pixKey || "",
+        pagamento_confirmado: order.paymentConfirmed ? "Sim" : "Não",
+        pagamento_informado: order.paymentInformed ? "Sim" : "Não",
+        arquivado: order.archived ? "Sim" : "Não",
+        operacao: order.operationType || "",
+        sistema: order.gpsModel || "",
+        direcionamento: order.directionLabel || "",
+        angulo: order.compassDegree ?? "",
+        pontos: Array.isArray(order.mapPoints) ? order.mapPoints.length : 0,
+        modificacao_arquivo: order.modificationRequested ? "Sim" : "Não",
+        descricao_modificacao: order.modificationDescription || "",
+        criado_em: formatDateTime(order.createdAt),
+        finalizado_em: formatDateTime(order.completedAt)
+    }));
+}
+
+function mapFinancialForCsv(orders) {
+    return orders.map(order => ({
+        id: order.id,
+        cliente: order.userName || "",
+        talhao: order.fieldName || "",
+        status: order.status || "",
+        valor: order.price || 0,
+        pix: order.pixKey || "",
+        pagamento_informado: order.paymentInformed ? "Sim" : "Não",
+        pagamento_confirmado: order.paymentConfirmed ? "Sim" : "Não",
+        criado_em: formatDateTime(order.createdAt)
+    }));
+}
+
+async function generateAdminReports() {
+    if (!currentUserIsAdmin) {
+        return alert("Acesso negado.");
+    }
+
+    const summaryContainer = document.getElementById('admin-reports-summary');
+    const detailsContainer = document.getElementById('admin-reports-details');
+
+    summaryContainer.innerHTML = "<p>Carregando relatórios...</p>";
+    detailsContainer.classList.add('hidden');
+    detailsContainer.innerHTML = "";
+
+    showLoading("Gerando relatórios...");
+
+    try {
+        const usersSnapshot = await getDocs(collection(db, "users"));
+        const ordersSnapshot = await getDocs(collection(db, "orders"));
+
+        const users = [];
+        const orders = [];
+
+        usersSnapshot.forEach(docSnap => {
+            users.push({
+                id: docSnap.id,
+                ...docSnap.data()
+            });
+        });
+
+        ordersSnapshot.forEach(docSnap => {
+            orders.push({
+                id: docSnap.id,
+                ...docSnap.data()
+            });
+        });
+
+        users.sort((a, b) => {
+            const dateA = timestampToDate(a.createdAt)?.getTime() || 0;
+            const dateB = timestampToDate(b.createdAt)?.getTime() || 0;
+            return dateB - dateA;
+        });
+
+        orders.sort((a, b) => {
+            const dateA = timestampToDate(a.createdAt)?.getTime() || 0;
+            const dateB = timestampToDate(b.createdAt)?.getTime() || 0;
+            return dateB - dateA;
+        });
+
+        const visitedLastWeek = users.filter(user => isDateWithinLastDays(user.lastVisitAt, 7));
+        const usersWithOrdersIds = new Set(orders.map(order => order.userId).filter(Boolean));
+        const usersWithOrders = users.filter(user => usersWithOrdersIds.has(user.id));
+
+        const waitingPrice = orders.filter(order => (order.status || "Aguardando valor") === "Aguardando valor" || order.status === "Pendente");
+        const waitingPayment = orders.filter(order => order.status === "Aguardando pagamento");
+        const paymentInformed = orders.filter(order => order.status === "Pagamento informado");
+        const inQueue = orders.filter(order => order.status === "Na fila" || order.status === "Em produção");
+        const completed = orders.filter(order => order.status === "Concluído" && order.archived !== true);
+        const archived = orders.filter(order => order.archived === true);
+        const modificationOrders = orders.filter(order => order.modificationRequested === true);
+
+        const totalValue = orders.reduce((sum, order) => sum + (Number(order.price) || 0), 0);
+        const confirmedValue = orders
+            .filter(order => order.paymentConfirmed === true)
+            .reduce((sum, order) => sum + (Number(order.price) || 0), 0);
+        const pendingValue = orders
+            .filter(order => order.price && order.paymentConfirmed !== true)
+            .reduce((sum, order) => sum + (Number(order.price) || 0), 0);
+
+        adminReportsCache = {
+            users,
+            orders,
+            visitedLastWeek,
+            usersWithOrders,
+            waitingPrice,
+            waitingPayment,
+            paymentInformed,
+            inQueue,
+            completed,
+            archived,
+            modificationOrders,
+            financial: orders.filter(order => order.price)
+        };
+
+        summaryContainer.innerHTML = `
+            <div class="report-metric-grid">
+                <div class="report-metric-card">
+                    <span class="report-metric-label">Usuários cadastrados</span>
+                    <span class="report-metric-value">${users.length}</span>
+                </div>
+                <div class="report-metric-card">
+                    <span class="report-metric-label">Acessaram nos últimos 7 dias</span>
+                    <span class="report-metric-value">${visitedLastWeek.length}</span>
+                </div>
+                <div class="report-metric-card">
+                    <span class="report-metric-label">Clientes com pedido</span>
+                    <span class="report-metric-value">${usersWithOrders.length}</span>
+                </div>
+                <div class="report-metric-card">
+                    <span class="report-metric-label">Total de pedidos</span>
+                    <span class="report-metric-value">${orders.length}</span>
+                </div>
+                <div class="report-metric-card">
+                    <span class="report-metric-label">Aguardando orçamento</span>
+                    <span class="report-metric-value">${waitingPrice.length}</span>
+                </div>
+                <div class="report-metric-card">
+                    <span class="report-metric-label">Aguardando pagamento</span>
+                    <span class="report-metric-value">${waitingPayment.length}</span>
+                </div>
+                <div class="report-metric-card">
+                    <span class="report-metric-label">Pagamento informado</span>
+                    <span class="report-metric-value">${paymentInformed.length}</span>
+                </div>
+                <div class="report-metric-card">
+                    <span class="report-metric-label">Na fila</span>
+                    <span class="report-metric-value">${inQueue.length}</span>
+                </div>
+                <div class="report-metric-card">
+                    <span class="report-metric-label">Concluídos</span>
+                    <span class="report-metric-value">${completed.length}</span>
+                </div>
+                <div class="report-metric-card">
+                    <span class="report-metric-label">Arquivados</span>
+                    <span class="report-metric-value">${archived.length}</span>
+                </div>
+                <div class="report-metric-card">
+                    <span class="report-metric-label">Modificação de arquivo</span>
+                    <span class="report-metric-value">${modificationOrders.length}</span>
+                </div>
+                <div class="report-metric-card">
+                    <span class="report-metric-label">Valor confirmado</span>
+                    <span class="report-metric-value">${formatMoney(confirmedValue)}</span>
+                </div>
+            </div>
+
+            <p style="color: var(--text-muted); font-size: 0.88rem;">
+                Valor total orçado: <strong>${formatMoney(totalValue)}</strong> •
+                Valor pendente de confirmação: <strong>${formatMoney(pendingValue)}</strong>
+            </p>
+        `;
+
+        detailsContainer.innerHTML = `
+            ${buildReportTable("Usuários que acessaram nos últimos 7 dias", visitedLastWeek, [
+                { label: "Nome", key: "name" },
+                { label: "E-mail", key: "email" },
+                { label: "WhatsApp", key: "whatsapp" },
+                { label: "Último acesso", render: row => formatDateTime(row.lastVisitAt) }
+            ])}
+
+            ${buildReportTable("Pedidos pendentes de ação", [...waitingPrice, ...waitingPayment, ...paymentInformed], [
+                { label: "Cliente", key: "userName" },
+                { label: "Talhão", key: "fieldName" },
+                { label: "Status", key: "status" },
+                { label: "Valor", render: row => formatMoney(row.price) },
+                { label: "Criado em", render: row => formatDateTime(row.createdAt) }
+            ])}
+
+            ${buildReportTable("Últimos pedidos", orders, [
+                { label: "Cliente", key: "userName" },
+                { label: "Fazenda", key: "farmName" },
+                { label: "Talhão", key: "fieldName" },
+                { label: "Status", key: "status" },
+                { label: "Sistema", key: "gpsModel" },
+                { label: "Criado em", render: row => formatDateTime(row.createdAt) }
+            ])}
+
+            ${buildReportTable("Demandas de modificação de arquivo", modificationOrders, [
+                { label: "Cliente", key: "userName" },
+                { label: "Talhão", key: "fieldName" },
+                { label: "Status", key: "status" },
+                { label: "Descrição", key: "modificationDescription" },
+                { label: "Criado em", render: row => formatDateTime(row.createdAt) }
+            ])}
+        `;
+
+        detailsContainer.classList.remove('hidden');
+
+        document.querySelectorAll('#admin-reports-card button, .admin-report-actions button').forEach(button => {
+            button.disabled = false;
+        });
+
+        document.getElementById('btn-export-users-csv').disabled = false;
+        document.getElementById('btn-export-visits-csv').disabled = false;
+        document.getElementById('btn-export-orders-csv').disabled = false;
+        document.getElementById('btn-export-pending-csv').disabled = false;
+        document.getElementById('btn-export-financial-csv').disabled = false;
+        document.getElementById('btn-export-full-csv').disabled = false;
+
+    } catch (error) {
+        console.error(error);
+        summaryContainer.innerHTML = "<p>Erro ao gerar relatórios. Verifique as regras do Firebase.</p>";
+    } finally {
+        hideLoading();
+    }
+}
+
+function requireReportsCache() {
+    if (!adminReportsCache) {
+        alert("Clique em Gerar Relatórios primeiro.");
+        return false;
+    }
+
+    return true;
+}
+
+document.getElementById('btn-generate-admin-reports').addEventListener('click', generateAdminReports);
+
+document.getElementById('btn-export-users-csv').addEventListener('click', () => {
+    if (!requireReportsCache()) return;
+    downloadCsv("usuarios_cadastrados_up_agro.csv", mapUsersForCsv(adminReportsCache.users));
+});
+
+document.getElementById('btn-export-visits-csv').addEventListener('click', () => {
+    if (!requireReportsCache()) return;
+    downloadCsv("acessos_ultimos_7_dias_up_agro.csv", mapUsersForCsv(adminReportsCache.visitedLastWeek));
+});
+
+document.getElementById('btn-export-orders-csv').addEventListener('click', () => {
+    if (!requireReportsCache()) return;
+    downloadCsv("todos_pedidos_up_agro.csv", mapOrdersForCsv(adminReportsCache.orders));
+});
+
+document.getElementById('btn-export-pending-csv').addEventListener('click', () => {
+    if (!requireReportsCache()) return;
+    const pending = [
+        ...adminReportsCache.waitingPrice,
+        ...adminReportsCache.waitingPayment,
+        ...adminReportsCache.paymentInformed,
+        ...adminReportsCache.inQueue
+    ];
+    downloadCsv("pendencias_up_agro.csv", mapOrdersForCsv(pending));
+});
+
+document.getElementById('btn-export-financial-csv').addEventListener('click', () => {
+    if (!requireReportsCache()) return;
+    downloadCsv("financeiro_up_agro.csv", mapFinancialForCsv(adminReportsCache.financial));
+});
+
+document.getElementById('btn-export-full-csv').addEventListener('click', () => {
+    if (!requireReportsCache()) return;
+
+    const fullRows = [
+        ...mapUsersForCsv(adminReportsCache.users).map(row => ({ tipo: "usuario", ...row })),
+        ...mapOrdersForCsv(adminReportsCache.orders).map(row => ({ tipo: "pedido", ...row }))
+    ];
+
+    downloadCsv("relatorio_completo_up_agro.csv", fullRows);
 });
 
 // ==========================================

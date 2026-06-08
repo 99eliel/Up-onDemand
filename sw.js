@@ -1,11 +1,11 @@
-const CACHE_NAME = 'upagro-cache-angulo-sentido-20260605';
+const CACHE_NAME = 'upagro-cache-admin-relatorios-20260605';
 
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
-    './style.css?v=angulo-sentido-20260605',
-    './app.js?v=angulo-sentido-20260605',
+    './style.css?v=admin-relatorios-20260605',
+    './app.js?v=admin-relatorios-20260605',
     './manifest.json',
     './manual_up_agro_instrucoes.pdf'
 ];

@@ -727,3 +727,129 @@ details summary {
         grid-template-columns: 1fr;
     }
 }
+
+
+
+/* ===== Relatórios ADM ===== */
+
+.admin-reports-card {
+    border-left: 5px solid #D4AF37 !important;
+}
+
+.admin-report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.admin-report-summary {
+    margin-top: 12px;
+}
+
+.report-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin: 14px 0;
+}
+
+.report-metric-card {
+    background: linear-gradient(135deg, #080808, #242424) !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(212,175,55,0.55) !important;
+    border-radius: 18px !important;
+    padding: 14px !important;
+    box-shadow: 0 10px 22px rgba(0,0,0,0.18) !important;
+}
+
+.report-metric-label {
+    display: block;
+    color: rgba(245,215,110,0.86) !important;
+    font-size: 0.78rem;
+    font-weight: 900;
+    margin-bottom: 6px;
+}
+
+.report-metric-value {
+    display: block;
+    color: #F5D76E !important;
+    font-size: 1.55rem;
+    line-height: 1;
+    font-weight: 950;
+}
+
+.admin-report-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.admin-report-actions .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.admin-reports-details {
+    margin-top: 18px;
+    display: grid;
+    gap: 14px;
+}
+
+.report-section-box {
+    background: linear-gradient(180deg, #FFFDF7, #F5EBD4) !important;
+    border: 1px solid rgba(212,175,55,0.35) !important;
+    border-radius: 18px !important;
+    padding: 14px !important;
+}
+
+.report-section-box h4 {
+    margin: 0 0 10px;
+    color: #111111 !important;
+    font-weight: 950;
+}
+
+.report-table-wrapper {
+    overflow-x: auto;
+}
+
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 640px;
+    font-size: 0.86rem;
+}
+
+.report-table th {
+    background: #111111;
+    color: #F5D76E;
+    text-align: left;
+    padding: 9px;
+    border: 1px solid rgba(212,175,55,0.30);
+}
+
+.report-table td {
+    padding: 8px;
+    border: 1px solid rgba(0,0,0,0.08);
+    background: rgba(255,255,255,0.72);
+}
+
+.report-empty {
+    color: #6D5B25;
+    font-weight: 800;
+    margin: 0;
+}
+
+@media (max-width: 760px) {
+    .admin-report-header {
+        flex-direction: column;
+    }
+
+    .report-metric-grid,
+    .admin-report-actions {
+        grid-template-columns: 1fr;
+    }
+}
