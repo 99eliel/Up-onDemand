@@ -21,7 +21,7 @@
 
     <meta name="theme-color" content="#2E7D32">
 
-    <link rel="stylesheet" href="style.css?v=admin-relatorios-20260605">
+    <link rel="stylesheet" href="style.css?v=sentido-sem-kml-20260605">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
@@ -1307,7 +1307,7 @@
                             </p>
 
                             <ol class="instruction-list">
-                                <li>Anexe o arquivo da área/talhão em KML, KMZ ou ZIP.</li>
+                                <li>Anexe o arquivo da área/talhão em KML, KMZ ou ZIP quando necessário. Se você informar o sentido desejado, o arquivo passa a ser opcional.</li>
                                 <li>Escolha o sistema/monitor agrícola correspondente.</li>
                                 <li>Marque de 1 até 12 pontos no mapa. Se quiser que a equipe interprete, marque 1 ponto no meio do talhão.</li>
                                 <li>Escolha o direcionamento das linhas: definido pela UP, sentido informado por você, ou envio de croqui/orientação.</li>
@@ -1405,9 +1405,13 @@
 
                 <div class="form-group">
                     <label for="kml-upload" class="upload-label file-upload-label">
-                        <span id="kml-filename">Anexar Arquivo KML/KMZ/SHP em ZIP *</span>
+                        <span id="kml-filename">Anexar Arquivo KML/KMZ/SHP em ZIP</span>
                         <input type="file" id="kml-upload" accept=".kml,.kmz,.zip" required>
                     </label>
+                    <p id="kml-required-hint" class="upload-rule-hint">
+                        Obrigatório quando a UP for interpretar o arquivo ou quando houver croqui/orientação específica. Opcional quando você informar o sentido desejado manualmente.
+                    </p>
+
                 </div>
 
                 <div class="form-group" id="map-reference-section">
@@ -1788,7 +1792,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script type="module" src="app.js?v=admin-relatorios-20260605"></script>
+    <script type="module" src="app.js?v=sentido-sem-kml-20260605"></script>
 
 </body>
 

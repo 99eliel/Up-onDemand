@@ -1093,6 +1093,52 @@ compassEl.addEventListener('pointercancel', () => {
 });
 
 
+
+function isKmlRequiredForCurrentRequest() {
+    const modificationRequested = document.getElementById('modification-requested')?.checked === true;
+    const directionMode = getSelectedDirectionMode();
+
+    if (modificationRequested) {
+        return true;
+    }
+
+    if (directionMode === "user_defined") {
+        return false;
+    }
+
+    return true;
+}
+
+function updateKmlRequiredUI() {
+    const kmlInput = document.getElementById('kml-upload');
+    const kmlFilename = document.getElementById('kml-filename');
+    const hint = document.getElementById('kml-required-hint');
+
+    if (!kmlInput || !kmlFilename) return;
+
+    const required = isKmlRequiredForCurrentRequest();
+
+    kmlInput.required = required;
+
+    if (required) {
+        kmlFilename.textContent = selectedKmlFile
+            ? `✔ ${selectedKmlFile.name}`
+            : "Anexar Arquivo KML/KMZ/SHP em ZIP *";
+
+        if (hint) {
+            hint.textContent = "Arquivo obrigatório para esta opção.";
+        }
+    } else {
+        kmlFilename.textContent = selectedKmlFile
+            ? `✔ ${selectedKmlFile.name}`
+            : "Anexar Arquivo KML/KMZ/SHP em ZIP (opcional)";
+
+        if (hint) {
+            hint.textContent = "Como você vai informar o sentido desejado, o arquivo é opcional. Se tiver arquivo da área, pode anexar para ajudar a equipe.";
+        }
+    }
+}
+
 function getSelectedDirectionMode() {
     const selected = document.querySelector('input[name="line-direction-mode"]:checked');
     return selected ? selected.value : "up_defined";
@@ -1142,6 +1188,8 @@ function updateDirectionUI() {
         const filename = document.getElementById('orientation-filename');
         if (filename) filename.textContent = "Nenhum arquivo selecionado";
     }
+
+    updateKmlRequiredUI();
 }
 
 function setElementDisabledBySelector(selector, disabled) {
@@ -1186,6 +1234,8 @@ function updateModificationOnlyMode() {
         document.querySelectorAll('input[name="line-direction-mode"]').forEach(radio => radio.disabled = false);
         updateDirectionUI();
     }
+
+    updateKmlRequiredUI();
 }
 
 // ==========================================
@@ -1210,7 +1260,7 @@ document.getElementById('btn-next-step').addEventListener('click', () => {
     if (presetDirectionSelect) presetDirectionSelect.value = "";
     updateCompassVisual();
     document.getElementById('system-model').innerHTML = `<option value="">Selecione primeiro a marca/sistema...</option>`;
-    document.getElementById('kml-filename').textContent = "Anexar Arquivo KML/KMZ/SHP em ZIP *";
+    updateKmlRequiredUI();
     const orientationName = document.getElementById('orientation-filename');
     if (orientationName) orientationName.textContent = "Nenhum arquivo selecionado";
     clearMapPoints();
@@ -1235,11 +1285,8 @@ document.getElementById('btn-current-location').addEventListener('click', () => 
 });
 
 document.getElementById('kml-upload').addEventListener('change', (e) => {
-    selectedKmlFile = e.target.files[0];
-
-    document.getElementById('kml-filename').textContent = selectedKmlFile
-        ? `✔ ${selectedKmlFile.name}`
-        : "Anexar Arquivo KML/KMZ/SHP em ZIP *";
+    selectedKmlFile = e.target.files[0] || null;
+    updateKmlRequiredUI();
 });
 
 document.getElementById('system-brand').addEventListener('change', (e) => {
@@ -1299,7 +1346,9 @@ document.getElementById('modification-requested').addEventListener('change', () 
 document.getElementById('service-form').addEventListener('submit', (e) => {
     e.preventDefault();
 
-    if (!selectedKmlFile) {
+    const kmlRequired = isKmlRequiredForCurrentRequest();
+
+    if (kmlRequired && !selectedKmlFile) {
         return alert("Anexe o arquivo KML/KMZ/SHP em ZIP.");
     }
 
@@ -1363,7 +1412,7 @@ document.getElementById('service-form').addEventListener('submit', (e) => {
         modificationRequested: modificationRequested,
         modificationDescription: modificationDescription,
         mapPoints: modificationRequested ? [] : selectedMapPoints,
-        fileName: selectedKmlFile.name
+        fileName: selectedKmlFile ? selectedKmlFile.name : ""
     };
 
     document.getElementById('order-summary-list').innerHTML = modificationRequested
@@ -1371,7 +1420,7 @@ document.getElementById('service-form').addEventListener('submit', (e) => {
             <li><strong>Fazenda:</strong> ${escapeHtml(currentOrderData.farmName)}</li>
             <li><strong>Talhão:</strong> ${escapeHtml(currentOrderData.fieldName)}</li>
             <li><strong>Tipo:</strong> Demanda de modificação de arquivo</li>
-            <li><strong>Arquivo:</strong> ${escapeHtml(currentOrderData.fileName)}</li>
+            <li><strong>Arquivo:</strong> ${currentOrderData.fileName ? escapeHtml(currentOrderData.fileName) : "Não anexado"}</li>
             <li><strong>Descrição:</strong> ${escapeHtml(currentOrderData.modificationDescription)}</li>
         `
         : `
@@ -1404,9 +1453,13 @@ document.getElementById('btn-pay-pix').addEventListener('click', async () => {
     showLoading('Enviando pedido...');
 
     try {
-        const filePath = `orders_files/${currentUser.uid}/${Date.now()}_${selectedKmlFile.name}`;
-        const snapshot = await uploadBytes(ref(storage, filePath), selectedKmlFile);
-        const fileUrl = await getDownloadURL(snapshot.ref);
+        let fileUrl = "";
+
+        if (selectedKmlFile) {
+            const filePath = `orders_files/${currentUser.uid}/${Date.now()}_${selectedKmlFile.name}`;
+            const snapshot = await uploadBytes(ref(storage, filePath), selectedKmlFile);
+            fileUrl = await getDownloadURL(snapshot.ref);
+        }
 
         let orientationFileUrl = "";
         let orientationFileName = "";
@@ -1449,7 +1502,7 @@ document.getElementById('btn-pay-pix').addEventListener('click', async () => {
         compassDegree = 0;
         updateCompassVisual();
         clearMapPoints();
-        document.getElementById('kml-filename').textContent = "Anexar Arquivo KML/KMZ/SHP em ZIP *";
+        updateKmlRequiredUI();
 
         setupProfileScreen();
         showScreen('profile-screen');

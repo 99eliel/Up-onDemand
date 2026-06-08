@@ -853,3 +853,18 @@ details summary {
         grid-template-columns: 1fr;
     }
 }
+
+
+
+/* ===== Regra dinâmica do arquivo KML ===== */
+
+.upload-rule-hint {
+    margin: 8px 0 0;
+    color: #6D5B25;
+    font-size: 0.86rem;
+    font-weight: 800;
+    background: linear-gradient(180deg, #FFFDF7, #F5EBD4);
+    border: 1px solid rgba(212,175,55,0.35);
+    border-radius: 12px;
+    padding: 10px;
+}
