@@ -1,11 +1,11 @@
-const CACHE_NAME = 'upagro-cache-preto-dourado-force-20260605';
+const CACHE_NAME = 'upagro-cache-profile-pro-20260605';
 
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
-    './style.css?v=preto-dourado-force-20260605',
-    './app.js?v=preto-dourado-force-20260605',
+    './style.css?v=profile-pro-20260605',
+    './app.js?v=profile-pro-20260605',
     './manifest.json',
     './manual_up_agro_instrucoes.pdf'
 ];

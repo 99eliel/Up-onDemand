@@ -488,3 +488,185 @@ details summary {
         font-size: 0.88rem !important;
     }
 }
+
+
+
+/* ===== Refinamento profissional do perfil do cliente ===== */
+
+.user-info {
+    position: relative !important;
+    overflow: hidden !important;
+    display: grid !important;
+    grid-template-columns: 76px 1fr !important;
+    align-items: center !important;
+    gap: 14px !important;
+    background:
+        radial-gradient(circle at top right, rgba(245,215,110,0.22), transparent 36%),
+        linear-gradient(135deg, #080808 0%, #151515 70%, #463407 100%) !important;
+    border: 1px solid rgba(212,175,55,0.52) !important;
+    border-radius: 24px !important;
+    padding: 18px !important;
+    margin-bottom: 18px !important;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.24) !important;
+    color: #FFFFFF !important;
+}
+
+.user-info::after {
+    content: "";
+    position: absolute;
+    right: -54px;
+    top: -54px;
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, rgba(212,175,55,0.22), transparent 68%);
+    pointer-events: none;
+}
+
+.avatar-placeholder {
+    width: 66px !important;
+    height: 66px !important;
+    border-radius: 20px !important;
+    background:
+        linear-gradient(135deg, #D4AF37 0%, #F5D76E 52%, #A77E17 100%) !important;
+    color: #080808 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.75rem !important;
+    font-weight: 950 !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+    box-shadow:
+        0 10px 22px rgba(0,0,0,0.26),
+        inset 0 1px 0 rgba(255,255,255,0.65) !important;
+    border: 1px solid rgba(255,255,255,0.35) !important;
+    grid-row: 1 / span 4 !important;
+    text-transform: uppercase !important;
+}
+
+.user-info h3,
+#user-name {
+    margin: 0 !important;
+    color: #F5D76E !important;
+    font-size: 1.16rem !important;
+    font-weight: 950 !important;
+    line-height: 1.2 !important;
+    text-transform: capitalize !important;
+    letter-spacing: 0.2px !important;
+    z-index: 1 !important;
+}
+
+.user-info p,
+#user-phone,
+#user-email,
+#user-cpf {
+    margin: 2px 0 0 !important;
+    color: rgba(255,255,255,0.82) !important;
+    font-size: 0.88rem !important;
+    line-height: 1.25 !important;
+    z-index: 1 !important;
+}
+
+#user-phone {
+    font-weight: 800 !important;
+    color: #FFFFFF !important;
+}
+
+#user-email,
+#user-cpf {
+    font-size: 0.82rem !important;
+}
+
+.client-welcome-card {
+    padding: 22px !important;
+}
+
+.client-main-actions {
+    gap: 14px !important;
+}
+
+.client-action-card {
+    min-height: 178px !important;
+    padding: 18px !important;
+}
+
+.client-action-card h3 {
+    color: #111111 !important;
+    font-size: 1.04rem !important;
+    font-weight: 950 !important;
+}
+
+.client-action-card p {
+    color: #656565 !important;
+    line-height: 1.4 !important;
+}
+
+.client-section-card {
+    padding: 18px !important;
+}
+
+#user-orders-container > p,
+#admin-pricing-container > p,
+#admin-pending-payments-container > p,
+#admin-orders-container > p,
+#admin-completed-container > p,
+#admin-archived-container > p {
+    background: rgba(255,255,255,0.70) !important;
+    border: 1px dashed rgba(212,175,55,0.40) !important;
+    border-radius: 16px !important;
+    padding: 14px !important;
+    color: #6B5B2A !important;
+}
+
+.app-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 50 !important;
+}
+
+.card h3,
+.client-action-card h3,
+.client-welcome-card h3 {
+    letter-spacing: 0.1px !important;
+}
+
+.order-card-header {
+    gap: 14px !important;
+}
+
+.user-order-card,
+.admin-order-card {
+    transition: transform .15s ease, box-shadow .15s ease !important;
+}
+
+.user-order-card:hover,
+.admin-order-card:hover,
+.client-action-card:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 20px 42px rgba(0,0,0,0.14) !important;
+}
+
+@media (max-width: 640px) {
+    .user-info {
+        grid-template-columns: 58px 1fr !important;
+        gap: 12px !important;
+        padding: 15px !important;
+    }
+
+    .avatar-placeholder {
+        width: 54px !important;
+        height: 54px !important;
+        border-radius: 17px !important;
+        font-size: 1.45rem !important;
+    }
+
+    #user-name {
+        font-size: 1.02rem !important;
+    }
+
+    #user-phone,
+    #user-email,
+    #user-cpf {
+        font-size: 0.78rem !important;
+    }
+}

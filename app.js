@@ -129,6 +129,16 @@ const formatMoney = (value) => {
     return `R$ ${Number(value).toFixed(2).replace('.', ',')}`;
 };
 
+
+const formatNameTitle = (name) => {
+    return String(name || "")
+        .toLowerCase()
+        .split(" ")
+        .filter(Boolean)
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
+};
+
 const escapeHtml = (value) => {
     return String(value || "")
         .replaceAll("&", "&amp;")
@@ -405,14 +415,14 @@ document.getElementById('btn-logout').addEventListener('click', async () => {
 // ==========================================
 
 function setupProfileScreen() {
-    document.getElementById('user-name').textContent = currentUserData.name || "Usuário";
+    document.getElementById('user-name').textContent = formatNameTitle(currentUserData.name || "Usuário");
     document.getElementById('user-phone').textContent = currentUserData.whatsapp || "";
     document.getElementById('user-email').textContent = currentUserData.email || "";
     document.getElementById('user-cpf').textContent = currentUserData.cpf ? maskCPF(currentUserData.cpf) : "";
-    document.getElementById('user-avatar-initials').textContent = (currentUserData.name || "U").charAt(0).toUpperCase();
+    document.getElementById('user-avatar-initials').textContent = (currentUserData.name || "U").trim().charAt(0).toUpperCase();
     const welcomeName = document.getElementById('client-welcome-name');
     if (welcomeName) {
-        welcomeName.textContent = (currentUserData.name || "cliente").split(" ")[0];
+        welcomeName.textContent = formatNameTitle(currentUserData.name || "cliente").split(" ")[0];
     }
 
     const adminButton = document.getElementById('btn-admin-panel');
