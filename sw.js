@@ -1,11 +1,11 @@
-const CACHE_NAME = 'upagro-cache-sentido-sem-kml-20260605';
+const CACHE_NAME = 'upagro-cache-nome-home-20260605';
 
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
-    './style.css?v=sentido-sem-kml-20260605',
-    './app.js?v=sentido-sem-kml-20260605',
+    './style.css?v=nome-home-20260605',
+    './app.js?v=nome-home-20260605',
     './manifest.json',
     './manual_up_agro_instrucoes.pdf'
 ];
