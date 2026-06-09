@@ -882,3 +882,46 @@ details summary {
 .angle-mode-fields.hidden {
     display: none !important;
 }
+
+
+
+/* ===== Linhas internas da seta de direcionamento ===== */
+
+.compass-guidance-lines {
+    position: absolute;
+    inset: 28px 34px 24px 34px;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    pointer-events: none;
+    opacity: 0.92;
+}
+
+.compass-guidance-lines span {
+    display: block;
+    width: 3px;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(245,215,110,0.25), rgba(245,215,110,0.96), rgba(245,215,110,0.25));
+    box-shadow: 0 0 7px rgba(245,215,110,0.45);
+}
+
+.compass-arrow-visual,
+.compass-center {
+    z-index: 2;
+}
+
+.compass-center {
+    box-shadow: 0 0 0 3px rgba(8,8,8,0.60), 0 0 10px rgba(245,215,110,0.7) !important;
+}
+
+@media (max-width: 640px) {
+    .compass-guidance-lines {
+        inset: 24px 30px 22px 30px;
+    }
+
+    .compass-guidance-lines span {
+        width: 2.5px;
+    }
+}

@@ -21,7 +21,7 @@
 
     <meta name="theme-color" content="#2E7D32">
 
-    <link rel="stylesheet" href="style.css?v=servico-direcao-20260609">
+    <link rel="stylesheet" href="style.css?v=seta-linhas-20260609">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
@@ -1440,7 +1440,13 @@
                         <div class="map-cardinal map-cardinal-e">L</div>
                         <div class="map-cardinal map-cardinal-w">O</div>
 
-                        <div id="compass-overlay" class="compass-overlay hidden" title="Arraste para girar a rosa dos ventos">
+                        <div id="compass-overlay" class="compass-overlay hidden" title="Arraste para girar a seta do sentido das linhas">
+                            <div class="compass-guidance-lines" aria-hidden="true">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
                             <div class="compass-arrow-visual"></div>
                             <div class="compass-center"></div>
                         </div>
@@ -1810,7 +1816,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script type="module" src="app.js?v=servico-direcao-20260609"></script>
+    <script type="module" src="app.js?v=seta-linhas-20260609"></script>
 
 </body>
 

@@ -1,11 +1,11 @@
-const CACHE_NAME = 'upagro-cache-servico-direcao-20260609';
+const CACHE_NAME = 'upagro-cache-seta-linhas-20260609';
 
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
-    './style.css?v=servico-direcao-20260609',
-    './app.js?v=servico-direcao-20260609',
+    './style.css?v=seta-linhas-20260609',
+    './app.js?v=seta-linhas-20260609',
     './manifest.json',
     './manual_up_agro_instrucoes.pdf'
 ];
