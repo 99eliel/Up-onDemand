@@ -17,7 +17,8 @@ import {
     query,
     orderBy,
     serverTimestamp,
-    where
+    where,
+    deleteDoc
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import {
     getStorage,
@@ -2325,6 +2326,13 @@ function buildAdminOrderBaseHtml(order, orderId) {
                 </div>
             </details>
 
+            <div class="admin-delete-zone">
+                <button class="btn danger full-width btn-delete-order-admin" data-id="${escapeHtml(orderId)}">
+                    Apagar Pedido
+                </button>
+                <p class="delete-warning-text">Use apenas para pedidos de teste ou registros que realmente devem ser removidos.</p>
+            </div>
+
             <input type="hidden" value="${escapeHtml(orderId)}">
     `;
 }
@@ -2674,6 +2682,46 @@ document.getElementById('admin-archived-container').addEventListener('click', as
         } finally {
             hideLoading();
         }
+    }
+});
+
+
+async function deleteAdminOrder(orderId) {
+    if (!currentUserIsAdmin) {
+        return alert("Acesso negado.");
+    }
+
+    const firstConfirm = confirm("Tem certeza que deseja apagar este pedido? Essa ação remove o pedido da listagem do sistema.");
+
+    if (!firstConfirm) return;
+
+    const secondConfirm = confirm("Confirme novamente: este pedido será apagado e não aparecerá mais no painel ADM nem para o cliente.");
+
+    if (!secondConfirm) return;
+
+    showLoading("Apagando pedido...");
+
+    try {
+        await deleteDoc(doc(db, "orders", orderId));
+        alert("Pedido apagado com sucesso.");
+        loadAdminOrders();
+    } catch (error) {
+        console.error(error);
+        alert("Erro ao apagar pedido. Verifique as regras do Firebase.");
+    } finally {
+        hideLoading();
+    }
+}
+
+document.addEventListener('click', async (e) => {
+    if (e.target.classList.contains('btn-delete-order-admin')) {
+        const orderId = e.target.getAttribute('data-id');
+
+        if (!orderId) {
+            return alert("Pedido não identificado.");
+        }
+
+        await deleteAdminOrder(orderId);
     }
 });
 

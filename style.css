@@ -925,3 +925,37 @@ details summary {
         width: 2.5px;
     }
 }
+
+
+
+/* ===== Botão apagar pedido no ADM ===== */
+
+.btn.danger,
+button.danger,
+a.danger {
+    background: linear-gradient(135deg, #7A0B0B, #C62828) !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(255,255,255,0.18) !important;
+    box-shadow: 0 8px 18px rgba(198,40,40,0.22) !important;
+}
+
+.btn.danger:hover,
+button.danger:hover {
+    filter: brightness(1.05);
+}
+
+.admin-delete-zone {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #FFF5F5, #F8E0E0);
+    border: 1px solid rgba(198,40,40,0.28);
+}
+
+.delete-warning-text {
+    margin: 8px 0 0;
+    font-size: 0.78rem;
+    color: #7A0B0B;
+    font-weight: 800;
+    text-align: center;
+}

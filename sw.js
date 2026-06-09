@@ -1,11 +1,11 @@
-const CACHE_NAME = 'upagro-cache-como-usar-primeiro-20260609';
+const CACHE_NAME = 'upagro-cache-apagar-pedidos-20260609';
 
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
-    './style.css?v=como-usar-primeiro-20260609',
-    './app.js?v=como-usar-primeiro-20260609',
+    './style.css?v=apagar-pedidos-20260609',
+    './app.js?v=apagar-pedidos-20260609',
     './manifest.json',
     './manual_up_agro_instrucoes.pdf'
 ];
