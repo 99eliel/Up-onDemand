@@ -665,6 +665,8 @@ async function loadUserOrders() {
                             <p><strong>Talhão:</strong> ${escapeHtml(order.fieldName)}</p>
                             <p><strong>Sistema:</strong> ${escapeHtml(order.systemBrand || "")} ${escapeHtml(order.systemModel || "")}</p>
                             <p><strong>Direcionamento:</strong> ${escapeHtml(order.directionLabel || "Definido pela UP Agritechnology")}</p>
+                            ${order.directionMode === "user_defined" ? `<p><strong>Forma de definição:</strong> ${escapeHtml(order.angleDefinitionLabel || "")}</p>` : ""}
+                            ${order.presetDirectionLabel ? `<p><strong>Sentido escolhido:</strong> ${escapeHtml(order.presetDirectionLabel)}</p>` : ""}
                             ${order.directionMode === "user_defined" ? `<p><strong>Ângulo:</strong> ${escapeHtml(order.compassDegree || "0")}°</p>` : ""}
                             ${order.orientationFileUrl ? `<p><strong>Arquivo/croqui de orientação:</strong> <a href="${order.orientationFileUrl}" target="_blank">Abrir arquivo</a></p>` : ""}
                             <p><strong>Demanda de modificação:</strong> ${order.modificationRequested ? "Sim" : "Não"}</p>
@@ -917,15 +919,40 @@ function initReferenceMap() {
         }
     );
 
+    const satelliteLabels = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+        {
+            maxZoom: 19,
+            pane: 'overlayPane',
+            attribution: 'Labels &copy; Esri'
+        }
+    );
+
+    const roadsLabels = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',
+        {
+            maxZoom: 19,
+            pane: 'overlayPane',
+            attribution: 'Roads &copy; Esri'
+        }
+    );
+
+    const satelliteWithLabels = L.layerGroup([
+        satelliteMap,
+        satelliteLabels,
+        roadsLabels
+    ]);
+
     const reliefMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         maxZoom: 17,
         attribution: 'Map data: &copy; OpenStreetMap contributors, SRTM | Map style: &copy; OpenTopoMap'
     });
 
-    satelliteMap.addTo(referenceMap);
+    satelliteWithLabels.addTo(referenceMap);
 
     L.control.layers({
-        "Satélite": satelliteMap,
+        "Satélite com nomes": satelliteWithLabels,
+        "Satélite sem nomes": satelliteMap,
         "Mapa normal": normalMap,
         "Relevo / Topográfico": reliefMap
     }).addTo(referenceMap);
@@ -1102,7 +1129,7 @@ function isKmlRequiredForCurrentRequest() {
         return true;
     }
 
-    if (directionMode === "user_defined") {
+    if (directionMode === "user_defined" || directionMode === "orientation_file") {
         return false;
     }
 
@@ -1126,7 +1153,7 @@ function updateKmlRequiredUI() {
             : "Anexar Arquivo KML/KMZ/SHP em ZIP *";
 
         if (hint) {
-            hint.textContent = "Arquivo obrigatório para esta opção.";
+            hint.textContent = "Arquivo obrigatório quando a UP for interpretar o arquivo da área.";
         }
     } else {
         kmlFilename.textContent = selectedKmlFile
@@ -1134,7 +1161,11 @@ function updateKmlRequiredUI() {
             : "Anexar Arquivo KML/KMZ/SHP em ZIP (opcional)";
 
         if (hint) {
-            hint.textContent = "Como você vai informar o sentido desejado, o arquivo é opcional. Se tiver arquivo da área, pode anexar para ajudar a equipe.";
+            if (getSelectedDirectionMode() === "orientation_file") {
+                hint.textContent = "Como você vai enviar um arquivo/croqui de orientação específica, o arquivo da área de cima fica opcional.";
+            } else {
+                hint.textContent = "Como você vai informar o sentido desejado, o arquivo é opcional. Se tiver arquivo da área, pode anexar para ajudar a equipe.";
+            }
         }
     }
 }
@@ -1158,6 +1189,55 @@ function getSelectedDirectionLabel() {
     return "Definido pela UP Agritechnology (recomendado)";
 }
 
+
+function getAngleDefinitionMode() {
+    const selected = document.querySelector('input[name="angle-definition-mode"]:checked');
+    return selected ? selected.value : "custom_angle";
+}
+
+function getPresetDirectionLabel() {
+    const preset = document.getElementById('preset-direction-select');
+    if (!preset || preset.value === "") {
+        return "";
+    }
+
+    return preset.options[preset.selectedIndex].textContent;
+}
+
+function updateAngleDefinitionUI() {
+    const mode = getAngleDefinitionMode();
+    const customFields = document.getElementById('custom-angle-fields');
+    const presetFields = document.getElementById('preset-direction-fields');
+    const compass = document.getElementById('compass-overlay');
+    const angleBox = document.getElementById('compass-angle-box');
+    const directionMode = getSelectedDirectionMode();
+
+    if (!customFields || !presetFields) return;
+
+    if (mode === "custom_angle") {
+        customFields.classList.remove('hidden');
+        presetFields.classList.add('hidden');
+
+        const presetSelect = document.getElementById('preset-direction-select');
+        if (presetSelect) {
+            presetSelect.value = "";
+        }
+
+        if (directionMode === "user_defined") {
+            compass.classList.remove('hidden');
+            angleBox.classList.remove('hidden');
+        }
+    } else {
+        customFields.classList.add('hidden');
+        presetFields.classList.remove('hidden');
+
+        if (directionMode === "user_defined") {
+            compass.classList.add('hidden');
+            angleBox.classList.add('hidden');
+        }
+    }
+}
+
 function updateDirectionUI() {
     const mode = getSelectedDirectionMode();
     const compass = document.getElementById('compass-overlay');
@@ -1168,9 +1248,8 @@ function updateDirectionUI() {
     const angleControlGroup = document.getElementById('angle-control-group');
 
     if (mode === "user_defined") {
-        compass.classList.remove('hidden');
-        angleBox.classList.remove('hidden');
         if (angleControlGroup) angleControlGroup.classList.remove('hidden');
+        updateAngleDefinitionUI();
     } else {
         compass.classList.add('hidden');
         angleBox.classList.add('hidden');
@@ -1258,6 +1337,9 @@ document.getElementById('btn-next-step').addEventListener('click', () => {
     setCompassDegree(0);
     const presetDirectionSelect = document.getElementById('preset-direction-select');
     if (presetDirectionSelect) presetDirectionSelect.value = "";
+    const angleCustomRadio = document.querySelector('input[name="angle-definition-mode"][value="custom_angle"]');
+    if (angleCustomRadio) angleCustomRadio.checked = true;
+    updateAngleDefinitionUI();
     updateCompassVisual();
     document.getElementById('system-model').innerHTML = `<option value="">Selecione primeiro a marca/sistema...</option>`;
     updateKmlRequiredUI();
@@ -1328,6 +1410,22 @@ document.querySelectorAll('input[name="line-direction-mode"]').forEach((radio) =
     });
 });
 
+document.querySelectorAll('input[name="angle-definition-mode"]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+        updateAngleDefinitionUI();
+    });
+});
+
+document.getElementById('manual-angle-input').addEventListener('input', (e) => {
+    setCompassDegree(e.target.value);
+});
+
+document.getElementById('preset-direction-select').addEventListener('change', (e) => {
+    if (e.target.value !== "") {
+        setCompassDegree(e.target.value);
+    }
+});
+
 document.getElementById('orientation-file-upload').addEventListener('change', (e) => {
     selectedOrientationFile = e.target.files[0] || null;
     document.getElementById('orientation-filename').textContent = selectedOrientationFile
@@ -1361,6 +1459,12 @@ document.getElementById('service-form').addEventListener('submit', (e) => {
 
     const directionMode = getSelectedDirectionMode();
     const directionLabel = getSelectedDirectionLabel();
+    const angleDefinitionMode = getAngleDefinitionMode();
+    const presetDirectionLabel = getPresetDirectionLabel();
+
+    if (!modificationRequested && directionMode === "user_defined" && angleDefinitionMode === "preset_direction" && !presetDirectionLabel) {
+        return alert("Escolha um sentido predefinido.");
+    }
 
     let systemBrand = "";
     let systemModel = "";
@@ -1407,6 +1511,11 @@ document.getElementById('service-form').addEventListener('submit', (e) => {
         gpsModel: gpsModel,
         directionMode: modificationRequested ? "modification_only" : directionMode,
         directionLabel: modificationRequested ? "Demanda de modificação de arquivo" : directionLabel,
+        angleDefinitionMode: (!modificationRequested && directionMode === "user_defined") ? angleDefinitionMode : "",
+        angleDefinitionLabel: (!modificationRequested && directionMode === "user_defined")
+            ? (angleDefinitionMode === "preset_direction" ? "Sentido predefinido" : "Seta/ângulo manual")
+            : "",
+        presetDirectionLabel: (!modificationRequested && directionMode === "user_defined" && angleDefinitionMode === "preset_direction") ? presetDirectionLabel : "",
         compassDegree: (!modificationRequested && directionMode === "user_defined") ? compassDegree : null,
         observations: document.getElementById('observations').value.trim(),
         modificationRequested: modificationRequested,
@@ -1430,6 +1539,8 @@ document.getElementById('service-form').addEventListener('submit', (e) => {
             <li><strong>Largura:</strong> ${escapeHtml(currentOrderData.implementWidth)}m</li>
             <li><strong>Sistema:</strong> ${escapeHtml(currentOrderData.gpsModel)}</li>
             <li><strong>Direcionamento:</strong> ${escapeHtml(currentOrderData.directionLabel)}</li>
+            ${currentOrderData.directionMode === "user_defined" ? `<li><strong>Forma de definição:</strong> ${escapeHtml(currentOrderData.angleDefinitionLabel || "")}</li>` : ""}
+            ${currentOrderData.presetDirectionLabel ? `<li><strong>Sentido escolhido:</strong> ${escapeHtml(currentOrderData.presetDirectionLabel)}</li>` : ""}
             ${currentOrderData.directionMode === "user_defined" ? `<li><strong>Ângulo:</strong> ${escapeHtml(currentOrderData.compassDegree)}°</li>` : ""}
             <li><strong>Pontos no mapa:</strong> ${selectedMapPoints.length} ponto(s)</li>
             <li><strong>Modificação de arquivo:</strong> Não</li>
@@ -1751,6 +1862,8 @@ function mapOrdersForCsv(orders) {
         operacao: order.operationType || "",
         sistema: order.gpsModel || "",
         direcionamento: order.directionLabel || "",
+        forma_definicao_angulo: order.angleDefinitionLabel || "",
+        sentido_predefinido: order.presetDirectionLabel || "",
         angulo: order.compassDegree ?? "",
         pontos: Array.isArray(order.mapPoints) ? order.mapPoints.length : 0,
         modificacao_arquivo: order.modificationRequested ? "Sim" : "Não",
@@ -2201,7 +2314,9 @@ function buildAdminOrderBaseHtml(order, orderId) {
                     <p><strong>Marca/Sistema:</strong> ${escapeHtml(order.systemBrand || "")}</p>
                     <p><strong>Modelo/Formato:</strong> ${escapeHtml(order.systemModel || "")}</p>
                     <p><strong>Direcionamento:</strong> ${escapeHtml(order.directionLabel || "Definido pela UP Agritechnology")}</p>
-                    ${order.directionMode === "user_defined" ? `<p><strong>Ângulo da rosa dos ventos:</strong> ${escapeHtml(order.compassDegree || "0")}°</p>` : ""}
+                    ${order.directionMode === "user_defined" ? `<p><strong>Forma de definição:</strong> ${escapeHtml(order.angleDefinitionLabel || "")}</p>` : ""}
+                    ${order.presetDirectionLabel ? `<p><strong>Sentido escolhido:</strong> ${escapeHtml(order.presetDirectionLabel)}</p>` : ""}
+                    ${order.directionMode === "user_defined" ? `<p><strong>Ângulo:</strong> ${escapeHtml(order.compassDegree || "0")}°</p>` : ""}
                     ${order.orientationFileUrl ? `<p><strong>Arquivo/croqui de orientação:</strong> <a href="${order.orientationFileUrl}" target="_blank">Abrir arquivo</a></p>` : ""}
                     <p><strong>Demanda de modificação:</strong> ${order.modificationRequested ? "Sim" : "Não"}</p>
                     ${order.modificationRequested ? `<p><strong>Descrição da modificação:</strong> ${escapeHtml(order.modificationDescription || "")}</p>` : ""}

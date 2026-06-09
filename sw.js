@@ -1,11 +1,11 @@
-const CACHE_NAME = 'upagro-cache-nome-home-20260605';
+const CACHE_NAME = 'upagro-cache-servico-direcao-20260609';
 
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
-    './style.css?v=nome-home-20260605',
-    './app.js?v=nome-home-20260605',
+    './style.css?v=servico-direcao-20260609',
+    './app.js?v=servico-direcao-20260609',
     './manifest.json',
     './manual_up_agro_instrucoes.pdf'
 ];

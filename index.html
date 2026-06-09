@@ -21,7 +21,7 @@
 
     <meta name="theme-color" content="#2E7D32">
 
-    <link rel="stylesheet" href="style.css?v=nome-home-20260605">
+    <link rel="stylesheet" href="style.css?v=servico-direcao-20260609">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
@@ -1139,8 +1139,8 @@
         <div class="logo-container">
             <img id="main-app-logo" src="icon-192x192.png" alt="Logo UP AGRO" style="width: 140px; margin-bottom: 15px; border-radius: 16px;">
 
-            <h1 style="font-size: 2.2rem;">On-demand</h1>
-            <p>Linha para piloto automático UP agritechnology</p>
+            <h1 style="font-size: 2.2rem;">UP AGRO</h1>
+            <p>Linhas de Piloto Automático On-Demand</p>
         </div>
 
         <div class="card" style="width: 100%; max-width: 420px; margin: 0 auto;">
@@ -1409,7 +1409,7 @@
                         <input type="file" id="kml-upload" accept=".kml,.kmz,.zip" required>
                     </label>
                     <p id="kml-required-hint" class="upload-rule-hint">
-                        Obrigatório quando a UP for interpretar o arquivo ou quando houver croqui/orientação específica. Opcional quando você informar o sentido desejado manualmente.
+                        Obrigatório somente quando a UP for interpretar o arquivo. Opcional quando você informar o sentido desejado ou enviar arquivo/croqui de orientação específica.
                     </p>
 
                 </div>
@@ -1425,7 +1425,7 @@
                     </div>
 
                     <div class="map-layer-hint">
-                        No canto superior direito do mapa, você pode alternar entre satélite, mapa normal e relevo/topográfico.
+                        No canto superior direito do mapa, você pode alternar entre satélite com nomes, satélite sem nomes, mapa normal e relevo/topográfico.
                     </div>
 
                     <button type="button" id="btn-current-location" class="btn primary full-width" style="margin-bottom: 10px;">
@@ -1486,33 +1486,51 @@
 
 
                     <div id="angle-control-group" class="angle-control-box hidden">
-                        <label>Defina o sentido das linhas</label>
+                        <label>Como deseja informar o sentido?</label>
 
-                        <div class="angle-control-grid">
-                            <div>
-                                <label for="manual-angle-input">Digitar ângulo (0° a 359°)</label>
-                                <input type="number" id="manual-angle-input" class="form-control" min="0" max="359" step="1" value="0">
-                            </div>
+                        <div class="direction-options compact-direction-options">
+                            <label class="direction-option">
+                                <input type="radio" name="angle-definition-mode" value="custom_angle" checked>
+                                <div>
+                                    <strong>Definir pela seta ou digitando o ângulo</strong>
+                                    <span>Use a seta no canto do mapa ou digite um ângulo de 0° a 359°.</span>
+                                </div>
+                            </label>
 
-                            <div>
-                                <label for="preset-direction-select">Ou escolher sentido</label>
-                                <select id="preset-direction-select" class="form-control">
-                                    <option value="">Selecione...</option>
-                                    <option value="0">Norte → Sul (0°)</option>
-                                    <option value="45">Nordeste → Sudoeste (45°)</option>
-                                    <option value="90">Leste → Oeste (90°)</option>
-                                    <option value="135">Sudeste → Noroeste (135°)</option>
-                                    <option value="180">Sul → Norte (180°)</option>
-                                    <option value="225">Sudoeste → Nordeste (225°)</option>
-                                    <option value="270">Oeste → Leste (270°)</option>
-                                    <option value="315">Noroeste → Sudeste (315°)</option>
-                                </select>
-                            </div>
+                            <label class="direction-option">
+                                <input type="radio" name="angle-definition-mode" value="preset_direction">
+                                <div>
+                                    <strong>Escolher um sentido predefinido</strong>
+                                    <span>Escolha um sentido pronto, como Norte → Sul ou Leste → Oeste.</span>
+                                </div>
+                            </label>
                         </div>
 
-                        <p class="angle-control-hint">
-                            Você pode girar a seta no mapa, digitar o ângulo ou escolher um sentido pronto.
-                        </p>
+                        <div id="custom-angle-fields" class="angle-mode-fields">
+                            <label for="manual-angle-input">Digitar ângulo (0° a 359°)</label>
+                            <input type="number" id="manual-angle-input" class="form-control" min="0" max="359" step="1" value="0">
+                            <p class="angle-control-hint">
+                                A seta e o campo de ângulo trabalham juntos. Se girar a seta, o valor muda; se digitar o valor, a seta gira.
+                            </p>
+                        </div>
+
+                        <div id="preset-direction-fields" class="angle-mode-fields hidden">
+                            <label for="preset-direction-select">Escolha o sentido</label>
+                            <select id="preset-direction-select" class="form-control">
+                                <option value="">Selecione...</option>
+                                <option value="0">Norte → Sul (0°)</option>
+                                <option value="45">Nordeste → Sudoeste (45°)</option>
+                                <option value="90">Leste → Oeste (90°)</option>
+                                <option value="135">Sudeste → Noroeste (135°)</option>
+                                <option value="180">Sul → Norte (180°)</option>
+                                <option value="225">Sudoeste → Nordeste (225°)</option>
+                                <option value="270">Oeste → Leste (270°)</option>
+                                <option value="315">Noroeste → Sudeste (315°)</option>
+                            </select>
+                            <p class="angle-control-hint">
+                                Ao escolher um sentido predefinido, a seta do mapa fica oculta para não confundir o cliente.
+                            </p>
+                        </div>
                     </div>
 
                     <div id="orientation-file-group" class="orientation-sketch-box hidden">
@@ -1571,7 +1589,7 @@
                 </div>
 
                 <div class="supported-systems-box">
-                    <strong>Sistemas atendidos:</strong><br>
+                    <strong>Sistema de piloto automático atendidos:</strong><br>
                     ISO11783 TaskData, Fendt Shapefile, Topcon Shapefile, Stara Dados, CNH .CN1/Shapefile, Trimble AgGPS/AgData, John Deere GS2 1800/GS3 2630/GEN4 4600.
                 </div>
 
@@ -1792,7 +1810,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script type="module" src="app.js?v=nome-home-20260605"></script>
+    <script type="module" src="app.js?v=servico-direcao-20260609"></script>
 
 </body>
 

@@ -868,3 +868,17 @@ details summary {
     border-radius: 12px;
     padding: 10px;
 }
+
+
+
+/* ===== Escolha exclusiva entre seta/ângulo e sentido predefinido ===== */
+.compact-direction-options {
+    margin-top: 10px !important;
+    margin-bottom: 12px !important;
+}
+.angle-mode-fields {
+    margin-top: 10px;
+}
+.angle-mode-fields.hidden {
+    display: none !important;
+}
