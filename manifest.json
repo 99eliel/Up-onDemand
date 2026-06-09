@@ -1,22 +1,37 @@
 {
-  "name": "UP AGRO On-Demand",
-  "short_name": "UP AGRO On-Demand",
-  "description": "Linhas de Piloto Automático On-Demand",
+  "name": "On-demand",
+  "short_name": "On-demand",
+  "description": "Linha para piloto automático UP agritechnology",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#F5F5F6",
-  "theme_color": "#2E7D32",
+  "orientation": "portrait",
+  "background_color": "#080808",
+  "theme_color": "#D4AF37",
   "icons": [
     {
       "src": "icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
