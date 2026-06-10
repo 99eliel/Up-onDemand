@@ -21,7 +21,7 @@
 
     <meta name="theme-color" content="#2E7D32">
 
-    <link rel="stylesheet" href="style.css?v=apagar-pedidos-20260609">
+    <link rel="stylesheet" href="style.css?v=colaborador-pix-outros-20260609">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
@@ -1564,6 +1564,11 @@
                     </select>
                 </div>
 
+                <div class="form-group hidden" id="operation-other-group">
+                    <label>Descreva o objetivo da operação *</label>
+                    <input type="text" id="operation-other-detail" class="form-control" placeholder="Ex: sistematização, terraceamento, levantamento, correção de linhas...">
+                </div>
+
                 <div class="form-group">
                     <label>Largura Útil do Implemento (Metros) *</label>
                     <input type="number" id="implement-width" class="form-control" step="0.01" required>
@@ -1685,24 +1690,59 @@
 
         <main class="content">
 
-            <div class="card" style="margin-bottom: 25px; border-left: 5px solid var(--secondary-color);">
+            <div class="card principal-only-card" data-principal-only="true" style="margin-bottom: 25px; border-left: 5px solid var(--secondary-color);">
 
-                <h3 class="section-title">Gerenciar Administradores</h3>
+                <h3 class="section-title">Gerenciar Administradores e Colaboradores</h3>
 
                 <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px;">
-                    Função temporária: primeiro a pessoa cria uma conta normal no app. Depois você digita o e-mail dela aqui para liberar acesso ADM.
+                    Primeiro a pessoa cria uma conta normal no app. Depois o ADM principal libera o acesso como administrador principal ou colaborador.
                 </p>
 
                 <div class="form-group">
-                    <label>E-mail do usuário que será ADM</label>
+                    <label>E-mail do usuário</label>
                     <input type="email" id="new-admin-email" class="form-control" placeholder="email@exemplo.com">
                 </div>
 
-                <button id="btn-make-admin" class="btn primary full-width">Tornar usuário existente em ADM</button>
+                <div class="form-group">
+                    <label>Tipo de acesso</label>
+                    <select id="new-admin-role" class="form-control">
+                        <option value="collaborator">Colaborador ADM</option>
+                        <option value="principal">Administrador principal</option>
+                    </select>
+                    <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 6px;">
+                        Colaborador vê os pedidos e pode dar orçamento, mas não define a chave PIX. O PIX usado será o travado pelo ADM principal.
+                    </p>
+                </div>
+
+                <button id="btn-make-admin" class="btn primary full-width">Liberar acesso ADM</button>
 
             </div>
 
-            <div class="card" style="margin-bottom: 25px; border-left: 5px solid var(--secondary-color);">
+            <div class="card principal-only-card" data-principal-only="true" style="margin-bottom: 25px; border-left: 5px solid var(--secondary-color);">
+
+                <h3 class="section-title">Chave PIX Travada para Colaboradores</h3>
+
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px;">
+                    Defina a chave PIX oficial que será usada quando um colaborador der orçamento. O colaborador informa apenas o valor; a chave PIX sai automaticamente desta configuração.
+                </p>
+
+                <div class="form-group">
+                    <label>Chave PIX oficial</label>
+                    <input type="text" id="fixed-pix-key" class="form-control" placeholder="Digite a chave PIX oficial">
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="fixed-pix-locked" class="large-checkbox" checked>
+                        <span>Travar esta chave PIX para colaboradores</span>
+                    </label>
+                </div>
+
+                <button id="btn-save-payment-settings" class="btn primary full-width">Salvar Chave PIX</button>
+
+            </div>
+
+            <div class="card principal-only-card" data-principal-only="true" style="margin-bottom: 25px; border-left: 5px solid var(--secondary-color);">
 
                 <h3 class="section-title">Personalização</h3>
 
@@ -1818,7 +1858,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script type="module" src="app.js?v=apagar-pedidos-20260609"></script>
+    <script type="module" src="app.js?v=colaborador-pix-outros-20260609"></script>
 
 </body>
 

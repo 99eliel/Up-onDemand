@@ -49,6 +49,12 @@ const storage = getStorage(app);
 let currentUser = null;
 let currentUserData = null;
 let currentUserIsAdmin = false;
+let currentUserAdminRole = "";
+let currentUserIsMainAdmin = false;
+let adminPaymentSettings = {
+    fixedPixKey: "",
+    lockedPixEnabled: true
+};
 let selectedLogoFile = null;
 let selectedKmlFile = null;
 let selectedOrientationFile = null;
@@ -305,7 +311,10 @@ onAuthStateChanged(auth, async (user) => {
             await trackUserVisit();
 
             const adminDoc = await getDoc(doc(db, "admins", user.uid));
-            currentUserIsAdmin = adminDoc.exists() && adminDoc.data().active !== false;
+            const adminData = adminDoc.exists() ? adminDoc.data() : null;
+            currentUserIsAdmin = adminDoc.exists() && adminData.active !== false;
+            currentUserAdminRole = currentUserIsAdmin ? (adminData.role || "principal") : "";
+            currentUserIsMainAdmin = currentUserIsAdmin && currentUserAdminRole !== "collaborator";
 
             setupProfileScreen();
             showScreen('profile-screen');
@@ -1300,7 +1309,7 @@ function updateModificationOnlyMode() {
         mapSection.classList.add('disabled-section');
         directionSection.classList.add('disabled-section');
 
-        setElementDisabledBySelector('#operation-type, #implement-width, #system-brand, #system-model, #system-other-name, #orientation-file-upload', true);
+        setElementDisabledBySelector('#operation-type, #operation-other-detail, #implement-width, #system-brand, #system-model, #system-other-name, #orientation-file-upload', true);
         document.querySelectorAll('input[name="line-direction-mode"]').forEach(radio => radio.disabled = true);
     } else {
         alertBox.classList.add('hidden');
@@ -1310,7 +1319,7 @@ function updateModificationOnlyMode() {
         mapSection.classList.remove('disabled-section');
         directionSection.classList.remove('disabled-section');
 
-        setElementDisabledBySelector('#operation-type, #implement-width, #system-brand, #system-model, #system-other-name, #orientation-file-upload', false);
+        setElementDisabledBySelector('#operation-type, #operation-other-detail, #implement-width, #system-brand, #system-model, #system-other-name, #orientation-file-upload', false);
         document.querySelectorAll('input[name="line-direction-mode"]').forEach(radio => radio.disabled = false);
         updateDirectionUI();
     }
@@ -1326,6 +1335,8 @@ document.getElementById('btn-next-step').addEventListener('click', () => {
     document.getElementById('service-form').reset();
     document.getElementById('system-other-group').classList.add('hidden');
     document.getElementById('system-other-name').required = false;
+    document.getElementById('operation-other-group').classList.add('hidden');
+    document.getElementById('operation-other-detail').required = false;
     document.getElementById('modification-description-group').classList.add('hidden');
     document.getElementById('modification-only-alert').classList.add('hidden');
     document.getElementById('modification-description').required = false;
@@ -1370,6 +1381,21 @@ document.getElementById('btn-current-location').addEventListener('click', () => 
 document.getElementById('kml-upload').addEventListener('change', (e) => {
     selectedKmlFile = e.target.files[0] || null;
     updateKmlRequiredUI();
+});
+
+
+document.getElementById('operation-type').addEventListener('change', (e) => {
+    const otherGroup = document.getElementById('operation-other-group');
+    const otherInput = document.getElementById('operation-other-detail');
+
+    if (e.target.value === "Outro") {
+        otherGroup.classList.remove('hidden');
+        otherInput.required = true;
+    } else {
+        otherGroup.classList.add('hidden');
+        otherInput.required = false;
+        otherInput.value = "";
+    }
 });
 
 document.getElementById('system-brand').addEventListener('change', (e) => {
@@ -1470,6 +1496,7 @@ document.getElementById('service-form').addEventListener('submit', (e) => {
     let systemBrand = "";
     let systemModel = "";
     let gpsModel = "Demanda de modificação de arquivo";
+    let operationTypeValue = "Modificação de arquivo";
 
     if (!modificationRequested) {
         if (selectedMapPoints.length < 1) {
@@ -1482,6 +1509,18 @@ document.getElementById('service-form').addEventListener('submit', (e) => {
 
         if (directionMode === "orientation_file" && !selectedOrientationFile) {
             return alert("Anexe o arquivo ou croqui com a orientação específica.");
+        }
+
+        operationTypeValue = document.getElementById('operation-type').value;
+
+        if (operationTypeValue === "Outro") {
+            const operationOtherDetail = document.getElementById('operation-other-detail').value.trim();
+
+            if (!operationOtherDetail) {
+                return alert("Descreva o objetivo da operação.");
+            }
+
+            operationTypeValue = `Outro - ${operationOtherDetail}`;
         }
 
         systemBrand = document.getElementById('system-brand').value;
@@ -1505,7 +1544,7 @@ document.getElementById('service-form').addEventListener('submit', (e) => {
     currentOrderData = {
         farmName: document.getElementById('farm-name').value.trim(),
         fieldName: document.getElementById('field-name').value.trim(),
-        operationType: modificationRequested ? "Modificação de arquivo" : document.getElementById('operation-type').value,
+        operationType: modificationRequested ? "Modificação de arquivo" : operationTypeValue,
         implementWidth: modificationRequested ? "" : document.getElementById('implement-width').value,
         systemBrand: systemBrand,
         systemModel: systemModel,
@@ -1630,6 +1669,86 @@ document.getElementById('btn-pay-pix').addEventListener('click', async () => {
 // PAINEL ADMINISTRATIVO
 // ==========================================
 
+
+function applyAdminRoleUI() {
+    const roleLabel = currentUserIsMainAdmin ? "Administrador principal" : "Colaborador ADM";
+
+    document.querySelectorAll('[data-principal-only="true"]').forEach((el) => {
+        if (currentUserIsMainAdmin) {
+            el.classList.remove('hidden-by-role');
+        } else {
+            el.classList.add('hidden-by-role');
+        }
+    });
+
+    const adminHeader = document.querySelector('#admin-screen .app-header h2');
+
+    if (adminHeader) {
+        adminHeader.innerHTML = `Painel ADM <span class="admin-role-badge">${roleLabel}</span>`;
+    }
+}
+
+async function loadAdminPaymentSettings() {
+    try {
+        const settingsDoc = await getDoc(doc(db, "settings", "payment"));
+
+        if (settingsDoc.exists()) {
+            adminPaymentSettings = {
+                fixedPixKey: settingsDoc.data().fixedPixKey || "",
+                lockedPixEnabled: settingsDoc.data().lockedPixEnabled !== false
+            };
+        }
+
+        const fixedPixInput = document.getElementById('fixed-pix-key');
+        const fixedPixLocked = document.getElementById('fixed-pix-locked');
+
+        if (fixedPixInput) fixedPixInput.value = adminPaymentSettings.fixedPixKey || "";
+        if (fixedPixLocked) fixedPixLocked.checked = adminPaymentSettings.lockedPixEnabled !== false;
+    } catch (error) {
+        console.warn("Não foi possível carregar a configuração de PIX:", error);
+    }
+}
+
+async function saveAdminPaymentSettings() {
+    if (!currentUserIsMainAdmin) {
+        return alert("Apenas o administrador principal pode alterar a chave PIX travada.");
+    }
+
+    const fixedPixInput = document.getElementById('fixed-pix-key');
+    const fixedPixLocked = document.getElementById('fixed-pix-locked');
+
+    const fixedPixKey = fixedPixInput.value.trim();
+    const lockedPixEnabled = fixedPixLocked.checked;
+
+    if (lockedPixEnabled && !fixedPixKey) {
+        return alert("Informe a chave PIX oficial antes de travar para colaboradores.");
+    }
+
+    showLoading("Salvando chave PIX...");
+
+    try {
+        await setDoc(doc(db, "settings", "payment"), {
+            fixedPixKey,
+            lockedPixEnabled,
+            updatedAt: serverTimestamp(),
+            updatedBy: currentUser.uid
+        }, { merge: true });
+
+        adminPaymentSettings = {
+            fixedPixKey,
+            lockedPixEnabled
+        };
+
+        alert("Chave PIX salva com sucesso.");
+        loadAdminOrders();
+    } catch (error) {
+        console.error(error);
+        alert("Erro ao salvar a chave PIX. Verifique as regras do Firestore.");
+    } finally {
+        hideLoading();
+    }
+}
+
 const adminSettingsModal = document.getElementById('admin-settings-modal');
 
 document.getElementById('btn-admin-panel').addEventListener('click', () => {
@@ -1638,6 +1757,8 @@ document.getElementById('btn-admin-panel').addEventListener('click', () => {
     }
 
     showScreen('admin-screen');
+    applyAdminRoleUI();
+    loadAdminPaymentSettings();
     loadAdminOrders();
 });
 
@@ -1654,14 +1775,22 @@ document.getElementById('btn-cancel-admin-settings').addEventListener('click', (
     adminSettingsModal.classList.add('hidden');
 });
 
+document.getElementById('btn-save-payment-settings').addEventListener('click', saveAdminPaymentSettings);
+
 document.getElementById('btn-make-admin').addEventListener('click', async () => {
+    if (!currentUserIsMainAdmin) {
+        return alert("Apenas o administrador principal pode liberar novos administradores ou colaboradores.");
+    }
+
     const email = document.getElementById('new-admin-email').value.trim().toLowerCase();
+    const role = document.getElementById('new-admin-role').value;
+    const roleLabel = role === "collaborator" ? "colaborador ADM" : "administrador principal";
 
     if (!email) {
         return alert("Informe o e-mail do usuário.");
     }
 
-    const confirmacao = confirm(`Tornar ${email} um administrador?`);
+    const confirmacao = confirm(`Liberar ${email} como ${roleLabel}?`);
 
     if (!confirmacao) return;
 
@@ -1686,12 +1815,13 @@ document.getElementById('btn-make-admin').addEventListener('click', async () => 
         await setDoc(doc(db, "admins", userDoc.id), {
             name: userData.name || "Administrador",
             email: userData.email || email,
+            role: role,
             active: true,
             createdAt: serverTimestamp(),
             createdBy: currentUser.uid
         }, { merge: true });
 
-        alert("Administrador liberado com sucesso!");
+        alert(`${roleLabel} liberado com sucesso!`);
         document.getElementById('new-admin-email').value = "";
     } catch (error) {
         console.error(error);
@@ -2338,6 +2468,8 @@ function buildAdminOrderBaseHtml(order, orderId) {
 }
 
 async function loadAdminOrders() {
+    await loadAdminPaymentSettings();
+
     const pricingContainer = document.getElementById('admin-pricing-container');
     const pendingContainer = document.getElementById('admin-pending-payments-container');
     const queueContainer = document.getElementById('admin-orders-container');
@@ -2431,16 +2563,31 @@ async function loadAdminOrders() {
                                     >
                                 </div>
 
-                                <div>
-                                    <label>Chave PIX</label>
-                                    <input 
-                                        type="text" 
-                                        class="form-control admin-pix-input" 
-                                        id="admin-pix-${orderId}" 
-                                        placeholder="Digite a chave PIX"
-                                        value="${escapeHtml(order.pixKey || "")}"
-                                    >
-                                </div>
+                                ${currentUserIsMainAdmin ? `
+                                    <div>
+                                        <label>Chave PIX</label>
+                                        <input 
+                                            type="text" 
+                                            class="form-control admin-pix-input" 
+                                            id="admin-pix-${orderId}" 
+                                            placeholder="Digite a chave PIX"
+                                            value="${escapeHtml(order.pixKey || adminPaymentSettings.fixedPixKey || "")}"
+                                        >
+                                        ${adminPaymentSettings.lockedPixEnabled && adminPaymentSettings.fixedPixKey ? `<p class="collaborator-note">PIX travado para colaboradores: ${escapeHtml(adminPaymentSettings.fixedPixKey)}</p>` : ""}
+                                    </div>
+                                ` : `
+                                    <div>
+                                        <label>Chave PIX travada pelo ADM principal</label>
+                                        <input 
+                                            type="text" 
+                                            class="form-control admin-pix-input pix-locked-readonly" 
+                                            id="admin-pix-${orderId}" 
+                                            value="${escapeHtml(adminPaymentSettings.fixedPixKey || "Nenhuma chave PIX configurada")}"
+                                            readonly
+                                        >
+                                        <p class="collaborator-note">Como colaborador, você informa apenas o valor. A chave PIX é definida pelo ADM principal.</p>
+                                    </div>
+                                `}
 
                                 <button class="btn primary full-width btn-set-price-pix full-row" data-id="${orderId}">
                                     Salvar Valor e Enviar Cobrança ao Cliente
@@ -2539,14 +2686,18 @@ document.getElementById('admin-pricing-container').addEventListener('click', asy
         const pixInput = document.getElementById(`admin-pix-${orderId}`);
 
         const price = Number(priceInput.value);
-        const pixKey = pixInput.value.trim();
+        let pixKey = currentUserIsMainAdmin
+            ? (pixInput ? pixInput.value.trim() : "")
+            : (adminPaymentSettings.lockedPixEnabled ? (adminPaymentSettings.fixedPixKey || "") : "");
 
         if (!price || price <= 0) {
             return alert("Informe um valor válido para o pedido.");
         }
 
         if (!pixKey) {
-            return alert("Informe a chave PIX.");
+            return alert(currentUserIsMainAdmin
+                ? "Informe a chave PIX."
+                : "O ADM principal precisa configurar e travar uma chave PIX antes de o colaborador dar orçamento.");
         }
 
         showLoading('Salvando cobrança...');
@@ -2556,7 +2707,9 @@ document.getElementById('admin-pricing-container').addEventListener('click', asy
                 price: price,
                 pixKey: pixKey,
                 status: "Aguardando pagamento",
-                pricedAt: serverTimestamp()
+                pricedAt: serverTimestamp(),
+                pricedBy: currentUser.uid,
+                pricedByRole: currentUserAdminRole || "principal"
             }, { merge: true });
 
             alert("Valor e PIX salvos! A cobrança já aparece no perfil do cliente.");

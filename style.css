@@ -959,3 +959,42 @@ button.danger:hover {
     font-weight: 800;
     text-align: center;
 }
+
+
+
+/* ===== ADM colaborador e chave PIX travada ===== */
+
+.admin-role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: rgba(212,175,55,0.14);
+    color: #F5D76E;
+    border: 1px solid rgba(212,175,55,0.45);
+    font-weight: 900;
+    font-size: 0.82rem;
+}
+
+.collaborator-note {
+    margin-top: 8px;
+    padding: 10px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #FFFDF7, #F5EBD4);
+    border: 1px solid rgba(212,175,55,0.34);
+    color: #6D5B25;
+    font-size: 0.84rem;
+    font-weight: 800;
+}
+
+.pix-locked-readonly {
+    background: #111111 !important;
+    color: #F5D76E !important;
+    border-color: rgba(212,175,55,0.65) !important;
+    font-weight: 900;
+}
+
+.principal-only-card.hidden-by-role {
+    display: none !important;
+}
