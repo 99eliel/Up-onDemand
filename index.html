@@ -21,7 +21,7 @@
 
     <meta name="theme-color" content="#2E7D32">
 
-    <link rel="stylesheet" href="style.css?v=colaborador-pix-outros-20260609">
+    <link rel="stylesheet" href="style.css?v=permissoes-colaborador-20260609">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
@@ -1139,8 +1139,8 @@
         <div class="logo-container">
             <img id="main-app-logo" src="icon-192x192.png" alt="Logo UP AGRO" style="width: 140px; margin-bottom: 15px; border-radius: 16px;">
 
-            <h1 style="font-size: 2.2rem;">UP AGRO</h1>
-            <p>Linhas de Piloto Automático On-Demand</p>
+            <h1 style="font-size: 2.2rem;">On-demand</h1>
+            <p>Linha para piloto automático UP agritechnology</p>
         </div>
 
         <div class="card" style="width: 100%; max-width: 420px; margin: 0 auto;">
@@ -1710,7 +1710,67 @@
                         <option value="principal">Administrador principal</option>
                     </select>
                     <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 6px;">
-                        Colaborador vê os pedidos e pode dar orçamento, mas não define a chave PIX. O PIX usado será o travado pelo ADM principal.
+                        Administrador principal tem acesso total. Colaborador terá apenas as permissões marcadas abaixo.
+                    </p>
+                </div>
+
+                <div id="collaborator-permissions-panel" class="collaborator-permissions-panel">
+                    <h4>Permissões do colaborador</h4>
+
+                    <div class="permissions-grid">
+                        <label class="permission-item">
+                            <input type="checkbox" class="collab-permission" value="viewPricing" checked>
+                            <span>Ver pedidos aguardando valor</span>
+                        </label>
+
+                        <label class="permission-item">
+                            <input type="checkbox" class="collab-permission" value="setPricing" checked>
+                            <span>Dar orçamento</span>
+                        </label>
+
+                        <label class="permission-item">
+                            <input type="checkbox" class="collab-permission" value="viewPending" checked>
+                            <span>Ver pagamentos pendentes</span>
+                        </label>
+
+                        <label class="permission-item">
+                            <input type="checkbox" class="collab-permission" value="confirmPayment">
+                            <span>Confirmar pagamento</span>
+                        </label>
+
+                        <label class="permission-item">
+                            <input type="checkbox" class="collab-permission" value="viewQueue" checked>
+                            <span>Ver fila de pedidos</span>
+                        </label>
+
+                        <label class="permission-item">
+                            <input type="checkbox" class="collab-permission" value="completeOrder">
+                            <span>Entregar/concluir pedidos</span>
+                        </label>
+
+                        <label class="permission-item">
+                            <input type="checkbox" class="collab-permission" value="viewCompleted" checked>
+                            <span>Ver pedidos concluídos</span>
+                        </label>
+
+                        <label class="permission-item">
+                            <input type="checkbox" class="collab-permission" value="archiveOrder">
+                            <span>Arquivar/desarquivar pedidos</span>
+                        </label>
+
+                        <label class="permission-item">
+                            <input type="checkbox" class="collab-permission" value="viewArchived">
+                            <span>Ver pedidos arquivados</span>
+                        </label>
+
+                        <label class="permission-item danger-permission">
+                            <input type="checkbox" class="collab-permission" value="deleteOrder">
+                            <span>Apagar pedidos</span>
+                        </label>
+                    </div>
+
+                    <p class="permissions-help">
+                        A chave PIX continua travada pelo ADM principal. Mesmo com permissão para orçamento, o colaborador não escolhe outra chave PIX.
                     </p>
                 </div>
 
@@ -1765,7 +1825,7 @@
             </div>
 
 
-            <div id="admin-reports-card" class="card admin-reports-card" style="margin-bottom: 25px;">
+            <div id="admin-reports-card" class="card admin-reports-card principal-only-card" data-principal-only="true" style="margin-bottom: 25px;">
 
                 <div class="admin-report-header">
                     <div>
@@ -1858,7 +1918,7 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script type="module" src="app.js?v=colaborador-pix-outros-20260609"></script>
+    <script type="module" src="app.js?v=permissoes-colaborador-20260609"></script>
 
 </body>
 

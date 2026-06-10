@@ -998,3 +998,76 @@ button.danger:hover {
 .principal-only-card.hidden-by-role {
     display: none !important;
 }
+
+
+
+/* ===== Permissões do colaborador ADM ===== */
+
+.collaborator-permissions-panel {
+    background: linear-gradient(180deg, #FFFDF7, #F5EBD4);
+    border: 1px solid rgba(212,175,55,0.38);
+    border-radius: 18px;
+    padding: 14px;
+    margin: 12px 0 16px;
+}
+
+.collaborator-permissions-panel.hidden {
+    display: none !important;
+}
+
+.collaborator-permissions-panel h4 {
+    margin: 0 0 10px;
+    color: #111111;
+    font-weight: 950;
+}
+
+.permissions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.permission-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 10px;
+    border: 1px solid rgba(212,175,55,0.30);
+    border-radius: 13px;
+    background: rgba(255,255,255,0.72);
+    font-weight: 800;
+    color: #1A1A1A;
+}
+
+.permission-item input {
+    margin-top: 2px;
+}
+
+.permission-item.danger-permission {
+    border-color: rgba(198,40,40,0.35);
+    background: #FFF5F5;
+    color: #7A0B0B;
+}
+
+.permissions-help {
+    margin: 12px 0 0;
+    color: #6D5B25;
+    font-size: 0.84rem;
+    font-weight: 800;
+}
+
+.no-permission-box {
+    background: #FFF5F5 !important;
+    border: 1px solid rgba(198,40,40,0.28) !important;
+    color: #7A0B0B !important;
+    border-radius: 16px !important;
+    padding: 14px !important;
+    font-weight: 850 !important;
+    text-align: center;
+}
+
+@media (max-width: 640px) {
+    .permissions-grid {
+        grid-template-columns: 1fr;
+    }
+}

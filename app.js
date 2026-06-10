@@ -51,6 +51,19 @@ let currentUserData = null;
 let currentUserIsAdmin = false;
 let currentUserAdminRole = "";
 let currentUserIsMainAdmin = false;
+let currentAdminPermissions = {};
+const DEFAULT_ADMIN_PERMISSIONS = {
+    viewPricing: true,
+    setPricing: true,
+    viewPending: true,
+    confirmPayment: true,
+    viewQueue: true,
+    completeOrder: true,
+    viewCompleted: true,
+    archiveOrder: true,
+    viewArchived: true,
+    deleteOrder: true
+};
 let adminPaymentSettings = {
     fixedPixKey: "",
     lockedPixEnabled: true
@@ -315,6 +328,9 @@ onAuthStateChanged(auth, async (user) => {
             currentUserIsAdmin = adminDoc.exists() && adminData.active !== false;
             currentUserAdminRole = currentUserIsAdmin ? (adminData.role || "principal") : "";
             currentUserIsMainAdmin = currentUserIsAdmin && currentUserAdminRole !== "collaborator";
+            currentAdminPermissions = currentUserIsMainAdmin
+                ? { ...DEFAULT_ADMIN_PERMISSIONS }
+                : { ...(adminData.permissions || {}) };
 
             setupProfileScreen();
             showScreen('profile-screen');
@@ -1670,6 +1686,42 @@ document.getElementById('btn-pay-pix').addEventListener('click', async () => {
 // ==========================================
 
 
+
+function hasAdminPermission(permission) {
+    if (currentUserIsMainAdmin) {
+        return true;
+    }
+
+    return currentAdminPermissions && currentAdminPermissions[permission] === true;
+}
+
+function noPermissionMessage(text = "Você não tem permissão para acessar esta área.") {
+    return `<div class="no-permission-box">${escapeHtml(text)}</div>`;
+}
+
+function getSelectedCollaboratorPermissions() {
+    const permissions = {};
+
+    document.querySelectorAll('.collab-permission').forEach((input) => {
+        permissions[input.value] = input.checked;
+    });
+
+    return permissions;
+}
+
+function updateCollaboratorPermissionsPanel() {
+    const role = document.getElementById('new-admin-role')?.value || "collaborator";
+    const panel = document.getElementById('collaborator-permissions-panel');
+
+    if (!panel) return;
+
+    if (role === "collaborator") {
+        panel.classList.remove('hidden');
+    } else {
+        panel.classList.add('hidden');
+    }
+}
+
 function applyAdminRoleUI() {
     const roleLabel = currentUserIsMainAdmin ? "Administrador principal" : "Colaborador ADM";
 
@@ -1776,6 +1828,8 @@ document.getElementById('btn-cancel-admin-settings').addEventListener('click', (
 });
 
 document.getElementById('btn-save-payment-settings').addEventListener('click', saveAdminPaymentSettings);
+document.getElementById('new-admin-role').addEventListener('change', updateCollaboratorPermissionsPanel);
+updateCollaboratorPermissionsPanel();
 
 document.getElementById('btn-make-admin').addEventListener('click', async () => {
     if (!currentUserIsMainAdmin) {
@@ -1785,6 +1839,9 @@ document.getElementById('btn-make-admin').addEventListener('click', async () => 
     const email = document.getElementById('new-admin-email').value.trim().toLowerCase();
     const role = document.getElementById('new-admin-role').value;
     const roleLabel = role === "collaborator" ? "colaborador ADM" : "administrador principal";
+    const permissions = role === "collaborator"
+        ? getSelectedCollaboratorPermissions()
+        : { ...DEFAULT_ADMIN_PERMISSIONS };
 
     if (!email) {
         return alert("Informe o e-mail do usuário.");
@@ -1816,6 +1873,7 @@ document.getElementById('btn-make-admin').addEventListener('click', async () => 
             name: userData.name || "Administrador",
             email: userData.email || email,
             role: role,
+            permissions: permissions,
             active: true,
             createdAt: serverTimestamp(),
             createdBy: currentUser.uid
@@ -2019,8 +2077,8 @@ function mapFinancialForCsv(orders) {
 }
 
 async function generateAdminReports() {
-    if (!currentUserIsAdmin) {
-        return alert("Acesso negado.");
+    if (!currentUserIsAdmin || !currentUserIsMainAdmin) {
+        return alert("Apenas o administrador principal pode acessar relatórios.");
     }
 
     const summaryContainer = document.getElementById('admin-reports-summary');
@@ -2214,6 +2272,11 @@ async function generateAdminReports() {
 }
 
 function requireReportsCache() {
+    if (!currentUserIsMainAdmin) {
+        alert("Apenas o administrador principal pode exportar relatórios.");
+        return false;
+    }
+
     if (!adminReportsCache) {
         alert("Clique em Gerar Relatórios primeiro.");
         return false;
@@ -2456,12 +2519,14 @@ function buildAdminOrderBaseHtml(order, orderId) {
                 </div>
             </details>
 
-            <div class="admin-delete-zone">
-                <button class="btn danger full-width btn-delete-order-admin" data-id="${escapeHtml(orderId)}">
-                    Apagar Pedido
-                </button>
-                <p class="delete-warning-text">Use apenas para pedidos de teste ou registros que realmente devem ser removidos.</p>
-            </div>
+            ${hasAdminPermission("deleteOrder") ? `
+                <div class="admin-delete-zone">
+                    <button class="btn danger full-width btn-delete-order-admin" data-id="${escapeHtml(orderId)}">
+                        Apagar Pedido
+                    </button>
+                    <p class="delete-warning-text">Use apenas para pedidos de teste ou registros que realmente devem ser removidos.</p>
+                </div>
+            ` : ""}
 
             <input type="hidden" value="${escapeHtml(orderId)}">
     `;
@@ -2476,21 +2541,21 @@ async function loadAdminOrders() {
     const completedContainer = document.getElementById('admin-completed-container');
     const archivedContainer = document.getElementById('admin-archived-container');
 
-    pricingContainer.innerHTML = "<p>Buscando pedidos aguardando valor...</p>";
-    pendingContainer.innerHTML = "<p>Buscando pagamentos pendentes...</p>";
-    queueContainer.innerHTML = "<p>Buscando fila de pedidos...</p>";
-    completedContainer.innerHTML = "<p>Buscando concluídos...</p>";
-    archivedContainer.innerHTML = "<p>Buscando arquivados...</p>";
+    pricingContainer.innerHTML = hasAdminPermission("viewPricing") ? "<p>Buscando pedidos aguardando valor...</p>" : noPermissionMessage("Você não tem permissão para ver pedidos aguardando valor.");
+    pendingContainer.innerHTML = hasAdminPermission("viewPending") ? "<p>Buscando pagamentos pendentes...</p>" : noPermissionMessage("Você não tem permissão para ver pagamentos pendentes.");
+    queueContainer.innerHTML = hasAdminPermission("viewQueue") ? "<p>Buscando fila de pedidos...</p>" : noPermissionMessage("Você não tem permissão para ver a fila de pedidos.");
+    completedContainer.innerHTML = hasAdminPermission("viewCompleted") ? "<p>Buscando concluídos...</p>" : noPermissionMessage("Você não tem permissão para ver pedidos concluídos.");
+    archivedContainer.innerHTML = hasAdminPermission("viewArchived") ? "<p>Buscando arquivados...</p>" : noPermissionMessage("Você não tem permissão para ver pedidos arquivados.");
 
     try {
         const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
 
-        pricingContainer.innerHTML = "";
-        pendingContainer.innerHTML = "";
-        queueContainer.innerHTML = "";
-        completedContainer.innerHTML = "";
-        archivedContainer.innerHTML = "";
+        pricingContainer.innerHTML = hasAdminPermission("viewPricing") ? "" : noPermissionMessage("Você não tem permissão para ver pedidos aguardando valor.");
+        pendingContainer.innerHTML = hasAdminPermission("viewPending") ? "" : noPermissionMessage("Você não tem permissão para ver pagamentos pendentes.");
+        queueContainer.innerHTML = hasAdminPermission("viewQueue") ? "" : noPermissionMessage("Você não tem permissão para ver a fila de pedidos.");
+        completedContainer.innerHTML = hasAdminPermission("viewCompleted") ? "" : noPermissionMessage("Você não tem permissão para ver pedidos concluídos.");
+        archivedContainer.innerHTML = hasAdminPermission("viewArchived") ? "" : noPermissionMessage("Você não tem permissão para ver pedidos arquivados.");
 
         let hasPricing = false;
         let hasPending = false;
@@ -2499,11 +2564,11 @@ async function loadAdminOrders() {
         let hasArchived = false;
 
         if (querySnapshot.empty) {
-            pricingContainer.innerHTML = "<p>Nenhum pedido aguardando valor.</p>";
-            pendingContainer.innerHTML = "<p>Nenhum pagamento aguardando confirmação.</p>";
-            queueContainer.innerHTML = "<p>Nenhum pedido na fila.</p>";
-            completedContainer.innerHTML = "<p>Nenhum pedido concluído.</p>";
-            archivedContainer.innerHTML = "<p>Nenhum pedido arquivado.</p>";
+            if (hasAdminPermission("viewPricing")) pricingContainer.innerHTML = "<p>Nenhum pedido aguardando valor.</p>";
+            if (hasAdminPermission("viewPending")) pendingContainer.innerHTML = "<p>Nenhum pagamento aguardando confirmação.</p>";
+            if (hasAdminPermission("viewQueue")) queueContainer.innerHTML = "<p>Nenhum pedido na fila.</p>";
+            if (hasAdminPermission("viewCompleted")) completedContainer.innerHTML = "<p>Nenhum pedido concluído.</p>";
+            if (hasAdminPermission("viewArchived")) archivedContainer.innerHTML = "<p>Nenhum pedido arquivado.</p>";
             return;
         }
 
@@ -2528,24 +2593,31 @@ async function loadAdminOrders() {
             const baseInfoHtml = buildAdminOrderBaseHtml(order, orderId);
 
             if (isArchived) {
+                if (!hasAdminPermission("viewArchived")) return;
+
                 hasArchived = true;
 
                 archivedContainer.innerHTML += `
                     ${baseInfoHtml}
                         ${order.finalFileUrl ? `<a href="${order.finalFileUrl}" target="_blank" class="btn-secondary">Baixar Arquivo Final</a>` : ''}
-                        <button class="btn secondary full-width btn-unarchive-order" data-id="${orderId}" style="margin-top: 10px;">
-                            Desarquivar Pedido
-                        </button>
+                        ${hasAdminPermission("archiveOrder") ? `
+                            <button class="btn secondary full-width btn-unarchive-order" data-id="${orderId}" style="margin-top: 10px;">
+                                Desarquivar Pedido
+                            </button>
+                        ` : ""}
                     </div>
                 `;
                 return;
             }
 
             if (status === "Aguardando valor" || status === "Pendente") {
+                if (!hasAdminPermission("viewPricing")) return;
+
                 hasPricing = true;
 
                 pricingContainer.innerHTML += `
                     ${baseInfoHtml}
+                        ${hasAdminPermission("setPricing") ? `
                         <div class="admin-action-box">
                             <p style="font-weight: 800; color: var(--primary-dark); margin-bottom: 10px;">Definir cobrança do pedido</p>
 
@@ -2594,12 +2666,15 @@ async function loadAdminOrders() {
                                 </button>
                             </div>
                         </div>
+                        ` : `<div class="admin-action-box"><p>Você pode visualizar este pedido, mas não tem permissão para dar orçamento.</p></div>`}
                     </div>
                 `;
                 return;
             }
 
             if (status === "Aguardando pagamento" || status === "Pagamento informado") {
+                if (!hasAdminPermission("viewPending")) return;
+
                 hasPending = true;
 
                 pendingContainer.innerHTML += `
@@ -2611,9 +2686,11 @@ async function loadAdminOrders() {
                                     : "Cliente ainda não informou pagamento."
                             }</p>
 
-                            <button class="btn primary full-width btn-confirm-payment" data-id="${orderId}">
-                                Confirmar Pagamento e Enviar para Fila
-                            </button>
+                            ${hasAdminPermission("confirmPayment") ? `
+                                <button class="btn primary full-width btn-confirm-payment" data-id="${orderId}">
+                                    Confirmar Pagamento e Enviar para Fila
+                                </button>
+                            ` : `<p>Você pode visualizar, mas não tem permissão para confirmar pagamento.</p>`}
                         </div>
                     </div>
                 `;
@@ -2621,52 +2698,60 @@ async function loadAdminOrders() {
             }
 
             if (status === "Na fila" || status === "Em produção") {
+                if (!hasAdminPermission("viewQueue")) return;
+
                 hasQueue = true;
 
                 queueContainer.innerHTML += `
                     ${baseInfoHtml}
                         <a href="${zapLink}" target="_blank" class="btn-secondary">Avisar Cliente</a>
 
-                        <div class="admin-action-box">
-                            <label>Anexar Arquivo Final (ZIP/PDF/KML/KMZ):</label>
-                            <input 
-                                type="file" 
-                                id="upload-final-${orderId}" 
-                                class="form-control"
-                                accept=".zip,.pdf,.kml,.kmz"
-                            >
-                            <button 
-                                class="btn primary full-width btn-complete-order" 
-                                data-id="${orderId}" 
-                                data-userid="${escapeHtml(order.userId || "")}">
-                                Concluir e Enviar para Cliente
-                            </button>
-                        </div>
+                        ${hasAdminPermission("completeOrder") ? `
+                            <div class="admin-action-box">
+                                <label>Anexar Arquivo Final (ZIP/PDF/KML/KMZ):</label>
+                                <input 
+                                    type="file" 
+                                    id="upload-final-${orderId}" 
+                                    class="form-control"
+                                    accept=".zip,.pdf,.kml,.kmz"
+                                >
+                                <button 
+                                    class="btn primary full-width btn-complete-order" 
+                                    data-id="${orderId}" 
+                                    data-userid="${escapeHtml(order.userId || "")}">
+                                    Concluir e Enviar para Cliente
+                                </button>
+                            </div>
+                        ` : `<div class="admin-action-box"><p>Você pode visualizar a fila, mas não tem permissão para entregar pedidos.</p></div>`}
                     </div>
                 `;
                 return;
             }
 
             if (status === "Concluído") {
+                if (!hasAdminPermission("viewCompleted")) return;
+
                 hasCompleted = true;
 
                 completedContainer.innerHTML += `
                     ${baseInfoHtml}
                         <p style="color: green; font-weight: bold;">✔ Pedido Concluído</p>
                         ${order.finalFileUrl ? `<a href="${order.finalFileUrl}" target="_blank" class="btn-secondary">Baixar Arquivo Final</a>` : ''}
-                        <button class="btn secondary full-width btn-archive-order" data-id="${orderId}" style="margin-top: 10px;">
-                            Arquivar Pedido
-                        </button>
+                        ${hasAdminPermission("archiveOrder") ? `
+                            <button class="btn secondary full-width btn-archive-order" data-id="${orderId}" style="margin-top: 10px;">
+                                Arquivar Pedido
+                            </button>
+                        ` : ""}
                     </div>
                 `;
             }
         });
 
-        if (!hasPricing) pricingContainer.innerHTML = "<p>Nenhum pedido aguardando valor.</p>";
-        if (!hasPending) pendingContainer.innerHTML = "<p>Nenhum pagamento aguardando confirmação.</p>";
-        if (!hasQueue) queueContainer.innerHTML = "<p>Nenhum pedido na fila.</p>";
-        if (!hasCompleted) completedContainer.innerHTML = "<p>Nenhum pedido concluído.</p>";
-        if (!hasArchived) archivedContainer.innerHTML = "<p>Nenhum pedido arquivado.</p>";
+        if (hasAdminPermission("viewPricing") && !hasPricing) pricingContainer.innerHTML = "<p>Nenhum pedido aguardando valor.</p>";
+        if (hasAdminPermission("viewPending") && !hasPending) pendingContainer.innerHTML = "<p>Nenhum pagamento aguardando confirmação.</p>";
+        if (hasAdminPermission("viewQueue") && !hasQueue) queueContainer.innerHTML = "<p>Nenhum pedido na fila.</p>";
+        if (hasAdminPermission("viewCompleted") && !hasCompleted) completedContainer.innerHTML = "<p>Nenhum pedido concluído.</p>";
+        if (hasAdminPermission("viewArchived") && !hasArchived) archivedContainer.innerHTML = "<p>Nenhum pedido arquivado.</p>";
 
     } catch (error) {
         console.error(error);
@@ -2680,6 +2765,10 @@ async function loadAdminOrders() {
 
 document.getElementById('admin-pricing-container').addEventListener('click', async (e) => {
     if (e.target.classList.contains('btn-set-price-pix')) {
+        if (!hasAdminPermission("setPricing")) {
+            return alert("Você não tem permissão para dar orçamento.");
+        }
+
         const orderId = e.target.getAttribute('data-id');
 
         const priceInput = document.getElementById(`admin-price-${orderId}`);
@@ -2725,6 +2814,10 @@ document.getElementById('admin-pricing-container').addEventListener('click', asy
 
 document.getElementById('admin-pending-payments-container').addEventListener('click', async (e) => {
     if (e.target.classList.contains('btn-confirm-payment')) {
+        if (!hasAdminPermission("confirmPayment")) {
+            return alert("Você não tem permissão para confirmar pagamento.");
+        }
+
         const orderId = e.target.getAttribute('data-id');
 
         const confirmacao = confirm("Confirmar pagamento deste pedido e enviar para a fila?");
@@ -2753,6 +2846,10 @@ document.getElementById('admin-pending-payments-container').addEventListener('cl
 
 document.getElementById('admin-orders-container').addEventListener('click', async (e) => {
     if (e.target.classList.contains('btn-complete-order')) {
+        if (!hasAdminPermission("completeOrder")) {
+            return alert("Você não tem permissão para entregar pedidos.");
+        }
+
         const orderId = e.target.getAttribute('data-id');
         const userId = e.target.getAttribute('data-userid');
 
@@ -2790,6 +2887,10 @@ document.getElementById('admin-orders-container').addEventListener('click', asyn
 
 document.getElementById('admin-completed-container').addEventListener('click', async (e) => {
     if (e.target.classList.contains('btn-archive-order')) {
+        if (!hasAdminPermission("archiveOrder")) {
+            return alert("Você não tem permissão para arquivar pedidos.");
+        }
+
         const orderId = e.target.getAttribute('data-id');
 
         const confirmacao = confirm("Arquivar este pedido concluído?");
@@ -2817,6 +2918,10 @@ document.getElementById('admin-completed-container').addEventListener('click', a
 
 document.getElementById('admin-archived-container').addEventListener('click', async (e) => {
     if (e.target.classList.contains('btn-unarchive-order')) {
+        if (!hasAdminPermission("archiveOrder")) {
+            return alert("Você não tem permissão para desarquivar pedidos.");
+        }
+
         const orderId = e.target.getAttribute('data-id');
 
         showLoading('Desarquivando pedido...');
@@ -2840,8 +2945,8 @@ document.getElementById('admin-archived-container').addEventListener('click', as
 
 
 async function deleteAdminOrder(orderId) {
-    if (!currentUserIsAdmin) {
-        return alert("Acesso negado.");
+    if (!currentUserIsAdmin || !hasAdminPermission("deleteOrder")) {
+        return alert("Você não tem permissão para apagar pedidos.");
     }
 
     const firstConfirm = confirm("Tem certeza que deseja apagar este pedido? Essa ação remove o pedido da listagem do sistema.");
