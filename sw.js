@@ -1,14 +1,19 @@
-const CACHE_NAME = 'ondemand-cache-nome-20260610';
+const CACHE_NAME = 'ondemand-cache-nome-final-20260610';
 
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
-    './style.css?v=ondemand-nome-20260610',
-    './app.js?v=ondemand-nome-20260610',
+    './style.css?v=nome-ondemand-final-20260610',
+    './app.js?v=nome-ondemand-final-20260610',
     './manifest.json',
     './manual_up_agro_instrucoes.pdf'
   './logo-ondemand.png'
+  './icon-192x192.png',
+  './icon-512x512.png',
+  './icon-maskable-192x192.png',
+  './icon-maskable-512x512.png',
+  './manifest.webmanifest',
 ];
 
 self.addEventListener('install', (event) => {
