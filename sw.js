@@ -1,11 +1,11 @@
-const CACHE_NAME = 'upagro-cache-firebase-cliente-20260609';
+const CACHE_NAME = 'upagro-cache-banner-corrigido-20260609';
 
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
-    './style.css?v=firebase-cliente-20260609',
-    './app.js?v=firebase-cliente-20260609',
+    './style.css?v=banner-corrigido-20260609',
+    './app.js?v=banner-corrigido-20260609',
     './manifest.json',
     './manual_up_agro_instrucoes.pdf'
 ];

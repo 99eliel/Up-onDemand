@@ -2353,7 +2353,7 @@ document.getElementById('admin-banner-upload').addEventListener('change', (e) =>
 });
 
 document.getElementById('btn-save-global-banner').addEventListener('click', async () => {
-    if (!currentUserIsAdmin) return alert("Acesso negado.");
+    if (!currentUserIsMainAdmin) return alert("Apenas o administrador principal pode alterar o banner.");
 
     if (!adminSelectedBanner) {
         return alert("Selecione um banner primeiro.");
@@ -2363,7 +2363,7 @@ document.getElementById('btn-save-global-banner').addEventListener('click', asyn
 
     try {
         const snapshot = await uploadBytes(
-            ref(storage, `app_assets/global_banner_${Date.now()}`),
+            ref(storage, `admin_uploads/global_banner_${Date.now()}`),
             adminSelectedBanner
         );
 
@@ -2378,8 +2378,8 @@ document.getElementById('btn-save-global-banner').addEventListener('click', asyn
         document.getElementById('app-global-banner').src = bannerUrl;
         document.getElementById('app-global-banner').classList.remove('hidden');
     } catch (error) {
-        console.error(error);
-        alert("Erro ao salvar banner.");
+        console.error("Erro ao salvar banner:", error);
+        alert("Erro ao salvar banner. Verifique se o usuário é ADM principal e se as regras do Storage permitem admin_uploads.");
     } finally {
         hideLoading();
     }
@@ -2402,7 +2402,7 @@ document.getElementById('admin-logo-upload').addEventListener('change', (e) => {
 });
 
 document.getElementById('btn-save-global-logo').addEventListener('click', async () => {
-    if (!currentUserIsAdmin) return alert("Acesso negado.");
+    if (!currentUserIsMainAdmin) return alert("Apenas o administrador principal pode alterar a logo.");
 
     if (!adminSelectedLogo) {
         return alert("Selecione uma logo primeiro.");
@@ -2412,7 +2412,7 @@ document.getElementById('btn-save-global-logo').addEventListener('click', async 
 
     try {
         const snapshot = await uploadBytes(
-            ref(storage, `app_assets/global_logo_${Date.now()}`),
+            ref(storage, `admin_uploads/global_logo_${Date.now()}`),
             adminSelectedLogo
         );
 
@@ -2426,8 +2426,8 @@ document.getElementById('btn-save-global-logo').addEventListener('click', async 
 
         document.getElementById('main-app-logo').src = logoUrl;
     } catch (error) {
-        console.error(error);
-        alert("Erro ao salvar logo.");
+        console.error("Erro ao salvar logo:", error);
+        alert("Erro ao salvar logo. Verifique se o usuário é ADM principal e se as regras do Storage permitem admin_uploads.");
     } finally {
         hideLoading();
     }
