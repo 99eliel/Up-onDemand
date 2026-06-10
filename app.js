@@ -28,13 +28,13 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCTEmqxiRR6SbzZDcqnn0wMrPvm2IFSDXw",
-    authDomain: "upagro-caa98.firebaseapp.com",
-    databaseURL: "https://upagro-caa98-default-rtdb.firebaseio.com",
-    projectId: "upagro-caa98",
-    storageBucket: "upagro-caa98.firebasestorage.app",
-    messagingSenderId: "364703805987",
-    appId: "1:364703805987:web:8c75b8931a48b3f7c63796"
+    apiKey: "AIzaSyCHjf4KbTbRc4c18b3hPN5RwXUVLDZxEro",
+    authDomain: "on-demand-5ad3e.firebaseapp.com",
+    projectId: "on-demand-5ad3e",
+    storageBucket: "on-demand-5ad3e.firebasestorage.app",
+    messagingSenderId: "565151696696",
+    appId: "1:565151696696:web:c7c7d3a383ee9b327523cd",
+    measurementId: "G-BSS8EDW7DM"
 };
 
 const app = initializeApp(firebaseConfig);

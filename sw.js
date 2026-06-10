@@ -1,11 +1,11 @@
-const CACHE_NAME = 'upagro-cache-permissoes-colaborador-20260609';
+const CACHE_NAME = 'upagro-cache-firebase-cliente-20260609';
 
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
-    './style.css?v=permissoes-colaborador-20260609',
-    './app.js?v=permissoes-colaborador-20260609',
+    './style.css?v=firebase-cliente-20260609',
+    './app.js?v=firebase-cliente-20260609',
     './manifest.json',
     './manual_up_agro_instrucoes.pdf'
 ];
