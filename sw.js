@@ -1,11 +1,11 @@
-const CACHE_NAME = 'ondemand-cache-nome-final-20260610';
+const CACHE_NAME = 'ondemand-cache-corrige-login-cliente-20260610';
 
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
-    './style.css?v=nome-ondemand-final-20260610',
-    './app.js?v=nome-ondemand-final-20260610',
+    './style.css?v=corrige-login-cliente-20260610',
+    './app.js?v=corrige-login-cliente-20260610',
     './manifest.json',
     './manual_up_agro_instrucoes.pdf'
   './logo-ondemand.png'

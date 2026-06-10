@@ -300,6 +300,29 @@ document.getElementById('btn-close-ios').addEventListener('click', () => {
 // AUTH, LOGIN E CADASTRO
 // ==========================================
 
+
+async function loadCurrentAdminAccess(user) {
+    try {
+        const adminDoc = await getDoc(doc(db, "admins", user.uid));
+        const adminData = adminDoc.exists() ? adminDoc.data() : null;
+
+        currentUserIsAdmin = !!adminData && adminData.active !== false;
+        currentUserAdminRole = currentUserIsAdmin ? (adminData.role || "principal") : "";
+        currentUserIsMainAdmin = currentUserIsAdmin && currentUserAdminRole !== "collaborator";
+
+        currentAdminPermissions = currentUserIsMainAdmin
+            ? { ...DEFAULT_ADMIN_PERMISSIONS }
+            : (currentUserIsAdmin ? { ...(adminData.permissions || {}) } : {});
+    } catch (error) {
+        console.warn("Não foi possível verificar ADM; entrando como cliente comum:", error);
+        currentUserIsAdmin = false;
+        currentUserAdminRole = "";
+        currentUserIsMainAdmin = false;
+        currentAdminPermissions = {};
+    }
+}
+
+
 onAuthStateChanged(auth, async (user) => {
     currentUser = user;
 
@@ -323,14 +346,7 @@ onAuthStateChanged(auth, async (user) => {
 
             await trackUserVisit();
 
-            const adminDoc = await getDoc(doc(db, "admins", user.uid));
-            const adminData = adminDoc.exists() ? adminDoc.data() : null;
-            currentUserIsAdmin = adminDoc.exists() && adminData.active !== false;
-            currentUserAdminRole = currentUserIsAdmin ? (adminData.role || "principal") : "";
-            currentUserIsMainAdmin = currentUserIsAdmin && currentUserAdminRole !== "collaborator";
-            currentAdminPermissions = currentUserIsMainAdmin
-                ? { ...DEFAULT_ADMIN_PERMISSIONS }
-                : { ...(adminData.permissions || {}) };
+            await loadCurrentAdminAccess(user);
 
             setupProfileScreen();
             showScreen('profile-screen');
