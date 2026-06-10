@@ -480,7 +480,7 @@ function setupProfileScreen() {
     const aerofotoLink = document.getElementById('btn-aerofoto-email');
     const subject = encodeURIComponent("Solicitar aerofotolevantamento de área");
     const body = encodeURIComponent(
-        `Olá, equipe UP AGRO.\n\nGostaria de solicitar aerofotolevantamento de minha área.\n\nNome: ${currentUserData.name || ""}\nWhatsApp: ${currentUserData.whatsapp || ""}\nCPF: ${currentUserData.cpf || ""}\n\nDescrição da área/demanda:\n`
+        `Olá, equipe On-Demand / UP Agritechnology.\n\nGostaria de solicitar aerofotolevantamento de minha área.\n\nNome: ${currentUserData.name || ""}\nWhatsApp: ${currentUserData.whatsapp || ""}\nCPF: ${currentUserData.cpf || ""}\n\nDescrição da área/demanda:\n`
     );
     aerofotoLink.href = `mailto:atendimento@upagritechnology.com.br?subject=${subject}&body=${body}`;
 

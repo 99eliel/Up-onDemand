@@ -1,13 +1,14 @@
-const CACHE_NAME = 'upagro-cache-banner-corrigido-20260609';
+const CACHE_NAME = 'ondemand-cache-nome-20260610';
 
 const urlsToCache = [
     './',
     './index.html',
     './style.css',
-    './style.css?v=banner-corrigido-20260609',
-    './app.js?v=banner-corrigido-20260609',
+    './style.css?v=ondemand-nome-20260610',
+    './app.js?v=ondemand-nome-20260610',
     './manifest.json',
     './manual_up_agro_instrucoes.pdf'
+  './logo-ondemand.png'
 ];
 
 self.addEventListener('install', (event) => {
